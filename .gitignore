@@ -1,3 +1,6 @@
+# Temporary package-lock.json | can be applied to version control at some point
+package-lock.json
+
 # Logs
 logs
 *.log
