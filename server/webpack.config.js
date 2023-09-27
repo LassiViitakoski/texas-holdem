@@ -1,12 +1,8 @@
-console.log('runnign');
-
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const NodemonPlugin = require('nodemon-webpack-plugin');
 
 const { NODE_ENV = 'production' } = process.env;
-
-console.log('Starting to resolve');
 
 module.exports = {
   entry: path.resolve(__dirname, './src/index.ts'),

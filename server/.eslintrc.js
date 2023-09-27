@@ -16,7 +16,8 @@ module.exports = {
   rules: {
     'indent': ['error', 4, { 'SwitchCase': 1 }],
     '@typescript-eslint/indent': ['error', 4, { SwitchCase: 1 }],
-    'no-console': 'off'
+    'no-console': 'off',
+    'import/prefer-default-export': 'off'
   },
-  ignorePatterns: [".eslintrc.js"]
+  ignorePatterns: [".eslintrc.js", "webpack.config.js"]
 }
