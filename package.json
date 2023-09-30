@@ -4,6 +4,19 @@
   "description": "",
   "keywords": [],
   "author": "",
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:cron-server": "npm run dev --workspace=cron-server",
+    "dev:database-api": "npm run dev --workspace=database-api"
+  },
   "license": "ISC",
-  "workspaces": ["./apps/*", "./packages/*"]
+  "workspaces": [
+    "./apps/*",
+    "./packages/*"
+  ],
+  "devDependencies": {
+    "nodemon-webpack-plugin": "^4.8.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
+  }
 }

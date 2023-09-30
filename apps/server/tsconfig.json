@@ -1,13 +1,6 @@
 {
-  "compilerOptions": {
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "commonjs",
-    "strict": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "target": "es2016"
-  },
-  "include": ["src/**/*.ts"],
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {},
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "./.eslintrc.js"]
 }

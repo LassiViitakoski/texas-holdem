@@ -1,25 +1,23 @@
 import express, { Request, Response } from 'express';
 import { DatabaseController } from 'database-api';
 import { CustomEventEmitter } from './CustomEventEmitter';
-import { GameServer } from './GameServer';
 
 export interface EmitterEvents {
     'timeout-tracker': {
         gameId: number,
         turnId: number;
-        untilTimeout: number
+        untilTimeout: number;
     };
 }
 
 (async () => {
-    const databaseController = new DatabaseController(10);
-    databaseController.expose();
-
     const app = express();
     const events = new CustomEventEmitter<EmitterEvents>();
-    const server = new GameServer();
 
-    await server.initialize();
+    console.log('Terve');
+
+    const controller = new DatabaseController(10);
+    controller.expose();
 
     const { PORT = 3000 } = process.env;
 

@@ -7,7 +7,7 @@ const timeout = (ms: number): Promise<void> => new Promise((resolve) => {
 const handler = async () => {
     const start = performance.now();
 
-    //
+    // HANDLE BUSINESS LOGIC HERE
 
     const millisecondsUsed = performance.now() - start;
 
