@@ -1,3 +1,3 @@
-const baseWebpack = require('../../webpack.base.config.js');
+const baseWebpack = require('../../configurations/webpack.base.config.js');
 
 module.exports = baseWebpack({ env: process.env, dirname: __dirname });

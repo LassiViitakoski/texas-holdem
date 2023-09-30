@@ -14,8 +14,6 @@ export interface EmitterEvents {
     const app = express();
     const events = new CustomEventEmitter<EmitterEvents>();
 
-    console.log('Terve');
-
     const controller = new DatabaseController(10);
     controller.expose();
 
