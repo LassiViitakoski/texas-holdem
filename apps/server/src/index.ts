@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { DatabaseController } from 'database-api';
 import { CustomEventEmitter } from './CustomEventEmitter';
 import { GameServer } from './GameServer';
 
@@ -11,6 +12,9 @@ export interface EmitterEvents {
 }
 
 (async () => {
+    const databaseController = new DatabaseController(10);
+    databaseController.expose();
+
     const app = express();
     const events = new CustomEventEmitter<EmitterEvents>();
     const server = new GameServer();
