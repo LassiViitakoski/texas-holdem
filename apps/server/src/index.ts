@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { DatabaseController } from 'database-api';
+
 import { CustomEventEmitter } from './CustomEventEmitter';
 
 export interface EmitterEvents {
@@ -11,16 +12,12 @@ export interface EmitterEvents {
     };
 }
 
-console.log('typeof api', typeof DatabaseController);
-console.log('Object.keys()', Object(DatabaseController || {}));
-
 (async () => {
     const app = express();
 
     app.use(cors());
 
     const events = new CustomEventEmitter<EmitterEvents>();
-
     const controller = new DatabaseController(10);
     controller.expose();
 

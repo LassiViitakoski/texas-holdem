@@ -2,7 +2,7 @@ const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const NodemonPlugin = require('nodemon-webpack-plugin');
 
-module.exports = ({ env, dirname }) => {
+module.exports = ({ env, dirname, libraryTarget = 'commonjs' }) => {
   const { NODE_ENV = 'production'} = env;
   return {
     entry: path.resolve(dirname, './src/index.ts'),
@@ -12,6 +12,7 @@ module.exports = ({ env, dirname }) => {
     output: {
       path: path.resolve(dirname, './dist'),
       filename: 'index.js',
+      libraryTarget
     },
     resolve: {
       extensions: ['.ts', '.js'],

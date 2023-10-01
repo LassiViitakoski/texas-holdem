@@ -1,10 +1,13 @@
-const api = require('./DatabaseController');
+class DatabaseController {
+    private connectionId: number;
 
-console.log('Database Api log', Object.keys(api));
+    constructor(id: number) {
+        this.connectionId = id;
+    }
 
-const test = () => 'test-string';
+    public expose() {
+        console.log(`Connection id of databasecontroller is ${this.connectionId}`);
+    }
+}
 
-module.exports = {
-    DatabaseController: api.DatabaseController,
-    test,
-};
+export { DatabaseController };
