@@ -1,6 +1,14 @@
 {
   "extends": "../../configurations/tsconfig.base.json",
-  "compilerOptions": {},
-  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "target": "es2016"
+  },
+  "include": ["src/**/*.ts", "./**/*.d.ts"],
   "exclude": ["node_modules", "./.eslintrc.js"]
 }

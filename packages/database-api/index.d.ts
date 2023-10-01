@@ -1,9 +1,9 @@
 declare class DatabaseController {
-  private connectionId: number;
+    private connectionId: number;
 
-  constructor(id: number);
+    constructor(id: number);
 
-  public expose: () => void;
+    public expose: () => void;
 }
 
 export { DatabaseController };

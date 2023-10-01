@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "build": "set NODE_ENV=production&& webpack",
     "dev": "set NODE_ENV=development&& webpack"
   },
   "keywords": [],

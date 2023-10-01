@@ -6,6 +6,7 @@
   "main": "dist/index.js",
   "types": "database-api.d.ts",
   "scripts": {
+    "build": "set NODE_ENV=production&& webpack",
     "dev": "set NODE_ENV=development&& webpack"
   },
   "keywords": [],

@@ -1,6 +1,10 @@
-import { DatabaseController } from './DatabaseController';
+const api = require('./DatabaseController');
+
+console.log('Database Api log', Object.keys(api));
 
 const test = () => 'test-string';
 
-export { DatabaseController, test };
-export default { DatabaseController, test };
+module.exports = {
+    DatabaseController: api.DatabaseController,
+    test,
+};

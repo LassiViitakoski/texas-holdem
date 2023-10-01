@@ -3,7 +3,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
-    "strict": false,
+    "strict": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "target": "es2016"
