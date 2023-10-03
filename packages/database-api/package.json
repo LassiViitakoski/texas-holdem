@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "types": "database-api.d.ts",
+  "types": "./types/index.d.ts",
   "scripts": {
     "build": "set NODE_ENV=production&& webpack",
     "dev": "set NODE_ENV=development&& webpack"

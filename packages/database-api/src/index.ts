@@ -1,3 +1,8 @@
+interface Test {
+    id: number;
+    name: string;
+}
+
 class DatabaseController {
     private connectionId: number;
 
@@ -10,4 +15,4 @@ class DatabaseController {
     }
 }
 
-export { DatabaseController };
+export { DatabaseController, Test };

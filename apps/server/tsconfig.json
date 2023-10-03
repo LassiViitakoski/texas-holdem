@@ -1,6 +1,6 @@
 {
   "extends": "../../configurations/tsconfig.base.json",
   "compilerOptions": {},
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "./.eslintrc.js"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
 }

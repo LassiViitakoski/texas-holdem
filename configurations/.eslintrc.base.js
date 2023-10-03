@@ -20,5 +20,5 @@ module.exports = ({ dirname }) => ({
     'import/prefer-default-export': 'off',
     'linebreak-style': 'off'
   },
-  ignorePatterns: [".eslintrc.js", "*.js"]
+  ignorePatterns: [".eslintrc.js", "*.js", "*.d.ts"]
 })

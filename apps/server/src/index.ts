@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { DatabaseController } from 'database-api';
-
 import { CustomEventEmitter } from './CustomEventEmitter';
 
 export interface EmitterEvents {
