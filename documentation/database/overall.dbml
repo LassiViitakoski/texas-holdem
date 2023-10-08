@@ -1,0 +1,159 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+// TABLES
+Table user {
+  id SERIAL [pk, increment]
+  username varchar
+  email varchar
+  phone varchar
+  role varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table game {
+  id SERIAL [pk, increment]
+  minimum_players integer
+  maximum_players integer
+  chip_unit chip_unit
+  rake decimal [note: "CHECK rake >= 0 && rake <= 1"]
+  status game_table_status
+  small blind
+}
+
+Table blind {
+  id SERIAL [pk, increment]
+  blind_number integer [note: "CHECK blind_number > 0"]
+  amount decimal
+}
+
+Table blind__game {
+  id SERIAL [pk, increment]
+  game_id integer [ref: > game.id]
+  blind_id integer [ref: > blind.id]
+}
+
+Table player {
+  id SERIAL [pk, increment]
+  stack decimal
+  user_id integer [ref: > user.id]
+  game_id integer [ref: > game.id]
+  note: "Defines session when user sits on table with certain stack"
+}
+
+Table account {
+  id SERIAL [pk, increment]
+  balance decimal
+  currency curency
+  user_id integer [ref: > user.id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table round {
+  id SERIAL [pk, increment]
+  current_stage round_stage
+  created_at timestamp
+  updated_at timestamp
+  pot decimal
+  game_id integer [ref: > game.id]
+}
+
+Table player__round {
+  id SERIAL [pk, increment]
+  starting_stack decimal
+  is_winner boolean [note: "Default false"]
+  player_id integer [ref: > player.id]
+  round_id integer [ref: > round.id]
+}
+
+Table card__player_round {
+  id SERIAL [pk, increment]
+  player__round_id integer [ref: > player__round.id]
+  card_id integer [ref: > card.id]
+}
+
+Table player__round__stage {
+  id SERIAL [pk, increment]
+  action betting_round_action
+  amount_payed decimal [note: "Default 0.00"]
+  player_id integer [ref: > player.id]
+  round_id integer [ref: > round.id]
+  stage_id integer [ref: > stage.id]
+}
+
+Table card {
+  id SERIAL [pk, increment]
+  suit card_suit
+  value card_value
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table stage {
+  id SERIAL [pk, increment]
+  type round_stage
+  round_id integer [ref: > round.id]
+}
+
+// -----------------------------------
+// ENUMS
+
+Enum chip_unit {
+  cash
+  chip
+}
+
+Enum game_table_status {
+  round_in_progress
+  waiting
+  inactive
+}
+
+Enum betting_round_action {
+  bet
+  call
+  check
+  fold
+}
+
+Enum round_stage {
+  preflop
+  flop
+  turn
+  river
+}
+
+Enum card_suit {
+  club
+  diamond
+  heart
+  spade
+}
+
+Enum card_value {
+  one
+  two
+  three
+  four
+  five
+  six
+  seven
+  eight
+  nine
+  ten
+  jack
+  queen
+  king
+  ace
+}
+
+Enum curency {
+  eur
+  sek
+  gbp
+  usd
+}
+
+
