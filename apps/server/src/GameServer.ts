@@ -10,7 +10,6 @@ export class GameServer {
         this.tables.push(new PokerTable([player]));
 
         setInterval(() => {
-            console.log('Tables', this.tables.map((table) => table.players[0].id).join(' '));
             this.tables.push(new PokerTable([new Player(this.tables.length + 1)]));
         }, 1000);
     }

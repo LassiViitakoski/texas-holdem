@@ -1,6 +1,18 @@
 {
-  "extends": "../../configurations/tsconfig.base.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "moduleDetection": "force",
+    "forceConsistentCasingInFileNames": true,
+    
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    
+    "module": "CommonJS",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }

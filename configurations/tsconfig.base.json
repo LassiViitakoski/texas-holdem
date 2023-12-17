@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "commonjs",
-    "strict": true,
     "skipLibCheck": true,
-    "sourceMap": true,
-    "target": "es2016"
+    "allowJs": true,
+    "moduleDetection": "force",
+    "forceConsistentCasingInFileNames": true,
+    
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
   }
 }

@@ -30,18 +30,15 @@ export interface EmitterEvents {
     });
 
     events.on('timeout-tracker', (parameters) => {
-        console.log('Timeout tracker Running with parameters', parameters);
-
         setTimeout(() => {
             // Make database call to figure out what is current {turnId}
             // If {turnId} same as received with parameters
             // Change turn and inform players
 
-            console.log('Set timeout logic running');
         }, 10000);
     });
 
     app.listen(PORT, () => {
-        console.log(`Server running at http://localhost:${PORT}`);
+        // console.log(`Server running at http://localhost:${PORT}`);
     });
 })();

@@ -1,9 +1,22 @@
 {
-  "extends": "../../configurations/tsconfig.base.json",
   "compilerOptions": {
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "moduleDetection": "force",
+    "forceConsistentCasingInFileNames": true,
+    
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+
+
+    "module": "CommonJS",
+    "target": "ES2022",
+    "lib": ["ES2022"],
     "declaration": true,
     "declarationDir": "./types",
-    "typeRoots": ["./types"]
+    "declarationMap": true,
+    "types": ["node"],
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]
