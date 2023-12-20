@@ -1,4 +1,6 @@
 {
+  "//exlanation for ^": "Indicates dependent project",
+
   "tasksRunnerOptions": {
     "default": {
       "runner": "nx/tasks-runners/default",
