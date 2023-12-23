@@ -1,3 +1,9 @@
-import { DatabaseController, ProductRepo, CardRepo } from './DatabaseController';
+import { PrismaClient } from '@prisma/client';
 
-export { DatabaseController, ProductRepo, CardRepo };
+const func = () => console.log('random-function');
+
+(async () => {
+    const prisma = new PrismaClient();
+})();
+
+export { func };
