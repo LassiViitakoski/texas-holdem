@@ -5,23 +5,239 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// generator erd {
+//  provider    = "prisma-erd-generator"
+//  output      = "./diagram.svg"
+//  ignoreEnums = true
+//  theme       = "forest"
+// }
+
 datasource db {
   provider = "postgresql"
-  url      = "postgres://postgres:postgres@127.0.0.1:5432/texas"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+  id        Int      @id @default(autoincrement())
+  username  String
+  email     String   @unique
+  phone     String?
+  role      UserRole @default(BASIC)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  accounts Account[]
+  players  Player[]
+
+  @@map("user")
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  author    User    @relation(fields: [authorId], references: [id])
-  authorId  Int
+model Player {
+  id        Int      @id @default(autoincrement())
+  stack     Decimal
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User @relation(fields: [userId], references: [id])
+  game   Game @relation(fields: [gameId], references: [id])
+  userId Int  @map("user_id")
+  gameId Int  @map("game_id")
+
+  rounds PlayerRound[]
+
+  @@map("player")
+}
+
+model Account {
+  id        Int      @id @default(autoincrement())
+  balance   Decimal  @default(0.00)
+  currency  Currency
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @map("user_id")
+
+  @@map("account")
+}
+
+model Card {
+  id        Int       @id @default(autoincrement())
+  suit      CardSuit
+  value     CardValue
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  playersRounds PlayerRound[]
+
+  @@map("card")
+}
+
+model Game {
+  id             Int             @id @default(autoincrement())
+  minimumPlayers Int             @default(2) @map("minimum_players")
+  maximumPlayers Int             @map("maximum_players")
+  chipUnit       ChipUnit        @map("chip_unit")
+  rake           Decimal
+  status         GameTableStatus
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  blinds  Blind[]
+  players Player[]
+  rounds  Round[]
+
+  @@map("game")
+}
+
+model Blind {
+  id          Int      @id @default(autoincrement())
+  blindNumber Int      @map("blind_number")
+  amount      Decimal
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  games Game[]
+
+  @@map("blind")
+}
+
+model Round {
+  id        Int        @id @default(autoincrement())
+  stage     RoundStage
+  pot       Decimal
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  game   Game @relation(fields: [gameId], references: [id])
+  gameId Int  @map("game_id")
+
+  playersRounds PlayerRound[]
+  stages        Stage[]
+
+  @@map("round")
+}
+
+model PlayerRound {
+  id            Int      @id @default(autoincrement())
+  startingStack Decimal  @map("starting_stack")
+  isWinner      Boolean  @map("is_winner")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  player   Player @relation(fields: [playerId], references: [id])
+  round    Round  @relation(fields: [roundId], references: [id])
+  playerId Int    @map("player_id")
+  roundId  Int    @map("round_id")
+
+  playersRoundsStages PlayerRoundStage[]
+  cards               Card[]
+
+  @@map("player_round")
+}
+
+model Stage {
+  id        Int        @id @default(autoincrement())
+  type      RoundStage
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  round   Round @relation(fields: [roundId], references: [id])
+  roundId Int   @map("round_id")
+
+  playersRoundsStages PlayerRoundStage[]
+
+  @@map("stage")
+}
+
+model PlayerRoundStage {
+  id          Int                @id @default(autoincrement())
+  action      BettingRoundAction
+  amountPayed Decimal            @default(0.00) @map("amount_payed")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  playerRound PlayerRound @relation(fields: [playerRoundId], references: [id])
+  stage       Stage       @relation(fields: [stageId], references: [id])
+
+  playerRoundId Int @map("player_round_id")
+  stageId       Int @map("stage_id")
+
+  @@map("player_round_stage")
+}
+
+enum Currency {
+  EUR
+  SEK
+  GDP
+  USD
+
+  @@map("CURRENCY")
+}
+
+enum UserRole {
+  BASIC
+  ADMIN
+
+  @@map("USER_ROLE")
+}
+
+enum ChipUnit {
+  CASH
+  CHIP
+
+  @@map("CHIP_UNIT")
+}
+
+enum GameTableStatus {
+  ROUND_IN_PROGRESS
+  WAITING
+  INACTIVE
+
+  @@map("GAME_TABLE_STATUS")
+}
+
+enum RoundStage {
+  PREFLOP
+  FLOP
+  TURN
+  RIVER
+
+  @@map("ROUND_STAGE")
+}
+
+enum BettingRoundAction {
+  BET
+  CALL
+  CHECK
+  FOLD
+
+  @@map("BETTING_ROUND_ACTION")
+}
+
+enum CardSuit {
+  CLUB
+  DIAMOND
+  HEART
+  SPADE
+
+  @@map("CARD_SUIT")
+}
+
+enum CardValue {
+  TWO
+  THREE
+  FOUR
+  FIVE
+  SIX
+  SEVEN
+  EIGHT
+  NINE
+  TEN
+  JACK
+  QUEEN
+  KING
+  ACE
+
+  @@map("CARD_VALUE")
 }

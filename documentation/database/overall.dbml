@@ -19,7 +19,6 @@ Table game {
   chip_unit chip_unit
   rake decimal [note: "CHECK rake >= 0 && rake <= 1"]
   status game_table_status
-  small blind
 }
 
 Table blind {
@@ -60,7 +59,7 @@ Table round {
   game_id integer [ref: > game.id]
 }
 
-Table player__round {
+Table player_round {
   id SERIAL [pk, increment]
   starting_stack decimal
   is_winner boolean [note: "Default false"]
@@ -68,18 +67,17 @@ Table player__round {
   round_id integer [ref: > round.id]
 }
 
-Table card__player_round {
+Table card_player_round {
   id SERIAL [pk, increment]
-  player__round_id integer [ref: > player__round.id]
+  player_round_id integer [ref: > player_round.id]
   card_id integer [ref: > card.id]
 }
 
-Table player__round__stage {
+Table player_round_stage {
   id SERIAL [pk, increment]
   action betting_round_action
   amount_payed decimal [note: "Default 0.00"]
-  player_id integer [ref: > player.id]
-  round_id integer [ref: > round.id]
+  player_round_id integer [ref: > player_round.id]
   stage_id integer [ref: > stage.id]
 }
 
@@ -100,60 +98,59 @@ Table stage {
 // -----------------------------------
 // ENUMS
 
-Enum chip_unit {
-  cash
-  chip
+Enum CHIP_UNIT {
+  CASH
+  CHIP
 }
 
-Enum game_table_status {
-  round_in_progress
-  waiting
-  inactive
+Enum GAME_TABLE_STATUS {
+  ROUND_IN_PROGRESS
+  WAITING
+  INACTIVE
 }
 
-Enum betting_round_action {
-  bet
-  call
-  check
-  fold
+Enum BETTING_ROUND_ACTION {
+  BET
+  CALL
+  CHECK
+  FOLD
 }
 
-Enum round_stage {
-  preflop
-  flop
-  turn
-  river
+Enum ROUND_STAGE {
+  PREFLOP
+  FLOP
+  TURN
+  RIVER
 }
 
-Enum card_suit {
-  club
-  diamond
-  heart
-  spade
+Enum CARD_SUIT {
+  CLUB
+  DIAMOND
+  HEART
+  SPADE
 }
 
-Enum card_value {
-  one
-  two
-  three
-  four
-  five
-  six
-  seven
-  eight
-  nine
-  ten
-  jack
-  queen
-  king
-  ace
+Enum CARD_VALUE {
+  TWO
+  THREE
+  FOUR
+  FIVE
+  SIX
+  SEVEN
+  EIGHT
+  NINE
+  TEN
+  JACK
+  QUEEN
+  KING
+  ACE
 }
 
-Enum curency {
-  eur
-  sek
-  gbp
-  usd
+Enum CURRENCY {
+  EUR
+  SEK
+  GDB
+  USD
 }
 
 
