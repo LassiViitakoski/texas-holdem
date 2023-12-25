@@ -22,7 +22,7 @@ export interface EmitterEvents {
 
     console.log({ users });
 
-    const eventsßß = new CustomEventEmitter<EmitterEvents>();
+    const events = new CustomEventEmitter<EmitterEvents>();
 
     const { PORT = 3000 } = process.env;
 
