@@ -5,6 +5,6 @@
     "declarationDir": "./types",
     "typeRoots": ["./types"]
   },
-  "include": ["./src/**/*.ts", "./backup/**/*.ts"],
+  "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]
 }

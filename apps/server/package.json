@@ -1,11 +1,16 @@
 {
+  "//MAC DEV": "NODE_ENV=development webpack",
+  "//MAC BUILD": "NODE_ENV=production webpack",
+  "//WINDOWS DEV": "set NODE_ENV=development&& webpack",
+  "//WINDOWS BUILD": "set NODE_ENV=production&& webpack",
+
   "name": "server",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "set NODE_ENV=production&& webpack",
-    "dev": "set NODE_ENV=development&& webpack"
+    "dev": "NODE_ENV=development webpack"
   },
   "keywords": [],
   "author": "",

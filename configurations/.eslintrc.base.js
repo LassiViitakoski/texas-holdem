@@ -18,7 +18,8 @@ module.exports = ({ dirname }) => ({
     '@typescript-eslint/indent': ['error', 4, { SwitchCase: 1 }],
     'no-console': 'off',
     'import/prefer-default-export': 'off',
-    'linebreak-style': 'off'
+    'linebreak-style': 'off',
+    'no-underscore-dangle': 'off'
   },
   ignorePatterns: [".eslintrc.js", "*.js", "*.d.ts"]
 })

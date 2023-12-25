@@ -1,9 +1,7 @@
-import { Player } from './Player';
-
 export class PokerTable {
-    public players: Player[] = [];
+    public players: any[] = [];
 
-    constructor(players: Player[]) {
+    constructor(players: any) {
         this.players = players;
     }
 

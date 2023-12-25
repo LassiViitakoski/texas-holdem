@@ -1,8 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { DatabaseController, ProductRepo, CardRepo } from 'database-api';
+import { DatabaseApi } from 'database-api';
 import { CustomEventEmitter } from './CustomEventEmitter';
-import { Player } from './Player';
 
 export interface EmitterEvents {
     'timeout-tracker': {
@@ -17,20 +16,13 @@ export interface EmitterEvents {
 
     app.use(cors());
 
-    const events = new CustomEventEmitter<EmitterEvents>();
-    const controller = new DatabaseController(10);
-    controller.expose();
+    /* const user = await createUser(); */
+    const api = new DatabaseApi();
+    const users = await api.user.findUsers();
 
-    const player = new Player(10);
-    player.init();
-    
+    console.log({ users });
 
-    const repo = new ProductRepo();
-
-    const repo2 = new ProductRepo();
-
-    const cardRepo = new CardRepo();
-
+    const eventsßß = new CustomEventEmitter<EmitterEvents>();
 
     const { PORT = 3000 } = process.env;
 

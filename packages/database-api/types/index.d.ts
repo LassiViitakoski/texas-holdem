@@ -1,2 +1,2 @@
-import { DatabaseController, ProductRepo, CardRepo } from './DatabaseController';
-export { DatabaseController, ProductRepo, CardRepo };
+import { DatabaseApi } from './database-api';
+export { DatabaseApi };
