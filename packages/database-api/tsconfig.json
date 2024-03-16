@@ -2,8 +2,7 @@
   "extends": "../../configurations/tsconfig.base.json",
   "compilerOptions": {
     "declaration": true,
-    "declarationDir": "./types",
-    "typeRoots": ["./types"]
+    "declarationDir": "types",
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]

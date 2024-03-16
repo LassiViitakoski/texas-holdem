@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { UserRepository } from './repositories';
 
 type PrismaLogType = 'info' | 'query' | 'warn' | 'error';
+
 type DatabaseApiConstructor = {
     datasourceUrl?: string;
     log?: PrismaLogType[];
