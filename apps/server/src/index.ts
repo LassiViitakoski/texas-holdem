@@ -27,7 +27,9 @@ export interface EmitterEvents {
   const instance = new DatabaseApi('testing stuff');
   instance.test();
 
-  const result = add(1, 2);
+  const result = add(1, 10);
+
+  console.log(result);
 
   const events = new CustomEventEmitter<EmitterEvents>();
 

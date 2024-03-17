@@ -1,5 +1,5 @@
 const path = require('path');
-const baseLintRules = require('../../.eslintrc.base.cjs');
+const baseLintRules = require('../../eslint.base.cjs');
 
 module.exports = {
   env: { node: true },

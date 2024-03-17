@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "moduleResolution": "Bundler",
     "outDir": "lib",
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
   },
   "include": ["src/**/*"]
 }

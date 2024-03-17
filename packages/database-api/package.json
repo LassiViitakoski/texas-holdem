@@ -8,8 +8,13 @@
   "module": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "lint" : "tsc",
-    "build": "rimraf lib && node ./esbuild.cjs && npm run lint"
+    "tsc": "tsc",
+    "build": "node ./esbuild.cjs && npm run tsc",
+    "start": "node dist/index.js",
+    "dev:tsc": "tsc --watch --preserveWatchOutput",
+    "dev:esbuild": "node ./esbuild.cjs --watch && npm run tsc",
+    "dev:node": "nodemon dist/index.js",
+    "dev": "run-p dev:*"
   },
   "keywords": [],
   "author": "",
@@ -18,18 +23,8 @@
     "@mermaid-js/mermaid-cli": "^10.6.1",
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "esbuild": "^0.20.2",
-    "eslint": "^8.2.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-plugin-import": "^2.25.2",
-    "nodemon": "^3.0.1",
     "prisma": "^5.7.1",
-    "prisma-erd-generator": "^1.11.2",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.2.2"
+    "prisma-erd-generator": "^1.11.2"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
