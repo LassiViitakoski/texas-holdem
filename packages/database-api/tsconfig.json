@@ -1,9 +1,13 @@
 {
-  "extends": "../../configurations/tsconfig.base.json",
   "compilerOptions": {
     "declaration": true,
-    "declarationDir": "types",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "strict": true,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "outDir": "lib"
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"]
 }

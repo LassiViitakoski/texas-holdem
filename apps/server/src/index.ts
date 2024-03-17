@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { DatabaseApi } from 'database-api';
+import { add, DatabaseApi } from 'database-api';
 import { CustomEventEmitter } from './CustomEventEmitter';
 
 export interface EmitterEvents {
@@ -16,11 +16,13 @@ export interface EmitterEvents {
 
     app.use(cors());
 
-    /* const user = await createUser(); */
+    /*    const user = await createUser();
     const api = new DatabaseApi();
     const users = await api.user.findUsers();
 
-    console.log({ users });
+    console.log({ users }); */
+
+    console.log({ apikeys: { api: typeof DatabaseApi, add: typeof add } });
 
     const events = new CustomEventEmitter<EmitterEvents>();
 

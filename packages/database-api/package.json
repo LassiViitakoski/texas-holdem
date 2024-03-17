@@ -3,11 +3,15 @@
   "name": "database-api",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
-  "types": "types/index.d.ts",
+  "type": "module",
+  "main": "lib/index.js",
+  "module": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "set NODE_ENV=production&& webpack",
-    "dev": "set NODE_ENV=development&& webpack"
+    "ts-types" : " tsc --outDir lib",
+    "build": "rimraf lib && node ./esbuild.js && npm run ts-types",
+    "//build//old": "set NODE_ENV=production&& webpack",
+    "//dev//old": "set NODE_ENV=development&& webpack"
   },
   "keywords": [],
   "author": "",

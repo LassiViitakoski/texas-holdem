@@ -1,3 +1,4 @@
+/*
 import { PrismaClient } from '@prisma/client';
 import { UserRepository } from './repositories';
 
@@ -31,3 +32,16 @@ class DatabaseApi {
 }
 
 export { DatabaseApi };
+*/
+
+export class DatabaseApi {
+    private readonly param: string;
+
+    constructor(param: string) {
+        this.param = param;
+    }
+
+    public test() {
+        console.log(`Test function param: ${this.param}`);
+    }
+}
