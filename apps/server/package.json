@@ -10,10 +10,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "lint" : " tsc",
-    "build": "rimraf dist && node ./esbuild.js && npm run lint",
-    "//build//old": "set NODE_ENV=production&& webpack",
-    "//dev//old": "set NODE_ENV=development&& webpack"
+    "lint" : "tsc",
+    "build": "rimraf dist && node ./esbuild.cjs && npm run lint"
   },
   "keywords": [],
   "author": "",
@@ -29,13 +27,13 @@
     "@types/node": "^20.6.4",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "esbuild": "^0.20.2",
     "eslint": "^8.2.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-plugin-import": "^2.25.2",
     "nodemon": "^3.0.1",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.2.2",
-    "webpack": "^5.88.2"
+    "rimraf": "^5.0.5",
+    "typescript": "^5.2.2"
   }
 }

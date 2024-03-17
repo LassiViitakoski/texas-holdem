@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "target": "esnext",
-    "lib": ["esnext"],
+    "target": "ESNext",
+    "lib": ["ESNext"],
     "strict": true,
     "noImplicitAny": false,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "outDir": "lib"
+    "moduleResolution": "Bundler",
+    "outDir": "lib",
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*"]
 }

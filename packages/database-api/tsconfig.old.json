@@ -1,9 +1,0 @@
-{
-  "extends": "../../configurations/tsconfig.base.json",
-  "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "types",
-  },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules"]
-}

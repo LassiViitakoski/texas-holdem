@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "scripts": {
-    "build": "set NODE_ENV=production&& webpack",
-    "dev": "set NODE_ENV=development&& webpack"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -22,8 +19,6 @@
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-plugin-import": "^2.25.2",
     "nodemon": "^3.0.1",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.2.2",
-    "webpack": "^5.88.2"
+    "typescript": "^5.2.2"
   }
 }

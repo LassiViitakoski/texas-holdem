@@ -15,11 +15,6 @@
     "./packages/*"
   ],
   "devDependencies": {
-    "esbuild": "^0.20.2",
-    "nodemon-webpack-plugin": "^4.8.1",
-    "nx": "^16.9.1",
-    "rimraf": "^5.0.5",
-    "webpack-cli": "^5.1.4",
-    "webpack-node-externals": "^3.0.0"
+    "nx": "^16.9.1"
   }
 }
