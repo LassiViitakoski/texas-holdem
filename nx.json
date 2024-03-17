@@ -1,5 +1,6 @@
 {
-  "//exlanation for ^": "Indicates dependent project",
+  "// Explanation for ^": "Indicates dependent project",
+  "// Example command": "npx nx dev server",
 
   "tasksRunnerOptions": {
     "default": {

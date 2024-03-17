@@ -16,6 +16,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "database-api": "^1.0.0"
+    "@texas-holdem/database-api": "^1.0.0"
   }
 }

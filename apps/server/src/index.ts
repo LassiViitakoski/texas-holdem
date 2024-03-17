@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { add, DatabaseApi } from 'database-api';
+import { add, DatabaseApi } from '@texas-holdem/database-api';
 import { CustomEventEmitter } from './CustomEventEmitter';
 
 export interface EmitterEvents {
@@ -27,7 +27,7 @@ export interface EmitterEvents {
   const instance = new DatabaseApi('testing stuff');
   instance.test();
 
-  const result = add(1, 10);
+  const result = add(1, 20);
 
   console.log(result);
 

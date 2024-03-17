@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "database-api",
+  "name": "@texas-holdem/database-api",
   "version": "1.0.0",
   "description": "",
   "type": "module",
