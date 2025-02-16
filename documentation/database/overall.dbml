@@ -52,10 +52,10 @@ Table account {
 
 Table round {
   id SERIAL [pk, increment]
-  current_stage round_stage
+  pot decimal
+  is_finished boolean [note: "Default false"]
   created_at timestamp
   updated_at timestamp
-  pot decimal
   game_id integer [ref: > game.id]
 }
 

@@ -1,0 +1,10 @@
+packages:
+  # all packages in subdirs of packages/ and apps/
+  - 'packages/*'
+  - 'apps/*'
+  # exclude test directories
+  - '!**/test/**'
+  # exclude build directories
+  - '!**/dist/**'
+  # exclude node_modules
+  - '!**/node_modules/**'

@@ -1,5 +1,5 @@
 {
-  "name": "cron-server",
+  "name": "@texas-holdem/cron-server",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -16,6 +16,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@texas-holdem/database-api": "^1.0.0"
+    "@texas-holdem/database-api": "workspace:*",
+    "toad-scheduler": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.4"
   }
 }

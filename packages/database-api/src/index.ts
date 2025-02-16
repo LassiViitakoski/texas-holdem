@@ -1,9 +1,30 @@
-import { DatabaseApi } from './database-api';
-import { add } from './add';
+import { PrismaClient } from '@prisma/client';
+import { UserRepository, } from './repositories/user-repository';
+import { GameRepository } from './repositories/game-repository';
 
-/* const api = DatabaseApi.getInstance({}) */
+export class DatabaseApi {
+  private static instance: DatabaseApi;
 
-console.log('Database api change worked!!!!!');
+  private readonly client: PrismaClient;
 
-export default { DatabaseApi, add };
-export { DatabaseApi, add };
+  public readonly user: UserRepository;
+
+  public readonly game: GameRepository;
+
+  private constructor() {
+    this.client = new PrismaClient();
+    this.user = new UserRepository(this.client);
+    this.game = new GameRepository(this.client);
+  }
+
+  public static getInstance(): DatabaseApi {
+    if (!this.instance) {
+      this.instance = new DatabaseApi();
+    }
+    return this.instance;
+  }
+
+  public async disconnect(): Promise<void> {
+    await this.client.$disconnect();
+  }
+}

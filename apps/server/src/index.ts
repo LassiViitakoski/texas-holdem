@@ -5,7 +5,7 @@ import { CustomEventEmitter } from './CustomEventEmitter';
 
 export interface EmitterEvents {
   'timeout-tracker': {
-    gameId: number,
+    gameId: number;
     turnId: number;
     untilTimeout: number;
   };
@@ -36,13 +36,17 @@ export interface EmitterEvents {
   const { PORT = 3000 } = process.env;
 
   app.get('/', (req: Request, res: Response) => {
-    events.emit('timeout-tracker', { gameId: 10, turnId: 7, untilTimeout: 10000 });
+    events.emit('timeout-tracker', {
+      gameId: 10,
+      turnId: 7,
+      untilTimeout: 10000,
+    });
     res.send({
       message: 'Application 1 Initialized',
     });
   });
 
-  events.on('timeout-tracker', (parameters) => {
+  events.on('timeout-tracker', parameters => {
     console.log('Timeout tracker Running with parameters', parameters);
 
     setTimeout(() => {

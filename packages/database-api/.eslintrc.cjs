@@ -14,5 +14,5 @@ module.exports = {
   rules: {
     ...baseLintRules,
   },
-  ignorePatterns: [".eslintrc.js", "*.js", "*.d.ts"]
+  ignorePatterns: [".eslintrc.cjs", "*.js", "*.mjs", "*.d.ts"]
 }

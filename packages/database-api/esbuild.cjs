@@ -2,7 +2,7 @@ const esbuild = require('esbuild');
 
 const buildConfig = {
   entryPoints: ['src/index.ts'],
-  outdir: 'lib',
+  outdir: 'dist',
   bundle: true,
   sourcemap: true,
   minify: true,
