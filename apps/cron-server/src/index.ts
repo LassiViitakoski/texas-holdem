@@ -2,7 +2,7 @@ import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 import { DatabaseApi } from '@texas-holdem/database-api';
 
 const scheduler = new ToadScheduler();
-const databaseApi = new DatabaseApi('TEST_PARAM');
+const databaseApi = new DatabaseApi();
 
 // Create an async task for checking game states
 const checkGameStatesTask = new AsyncTask(

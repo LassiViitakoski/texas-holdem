@@ -4,25 +4,21 @@
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
-  "module": "lib/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "tsc": "tsc",
-    "build": "node ./esbuild.cjs && tsc",
-    "dev": "run-p dev:*",
-    "dev:tsc": "tsc --watch --preserveWatchOutput",
-    "dev:esbuild": "node ./esbuild.cjs --watch && tsc",
-    "dev:node": "nodemon dist/index.js",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate && node scripts/redirect-prisma-paths.mjs"
+    "postinstall": "prisma generate"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^11.4.2",
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
     "prisma": "^6.3.1",
-    "prisma-erd-generator": "^2.0.4"
+    "vite": "^6.1.0",
+    "vite-plugin-dts": "^4.5.0",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",

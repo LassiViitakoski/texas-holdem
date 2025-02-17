@@ -1,3 +1,7 @@
+/**
+ * @deprecated This script is no longer in use. Prisma path resolution is now handled by prisma output file path. Might be needed when deploying to production to run in postinstall.
+ */
+
 import { createRequire } from "module";
 import fs from "fs";
 import path from "path";

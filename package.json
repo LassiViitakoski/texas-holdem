@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev:server": "pnpm --filter database-api build && run-p dev:database-api server:dev",
-    "dev:cron-server": "pnpm --filter database-api build && run-p dev:database-api cron:dev",
+    "server:dev": "pnpm --filter server dev",
     "dev:database-api": "pnpm --filter database-api dev"
   },
   "devDependencies": {

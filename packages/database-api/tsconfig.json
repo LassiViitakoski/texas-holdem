@@ -9,23 +9,16 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "moduleResolution": "Bundler",
-    "outDir": "lib",
+    "outDir": "dist",
+    "declarationDir": "dist",
     "emitDeclarationOnly": true,
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      ".prisma/client/index-browser": [
-        "/node_modules/.pnpm/@prisma+client@6.3.1_prisma_139b37887008538b87185db74f9edbae/node_modules/.prisma/client/index-browser"
-      ],
-      ".prisma/client/edge": [
-        "/node_modules/.pnpm/@prisma+client@6.3.1_prisma_139b37887008538b87185db74f9edbae/node_modules/.prisma/client/edge"
-      ],
-      ".prisma/client/default": [
-        "/node_modules/.pnpm/@prisma+client@6.3.1_prisma_139b37887008538b87185db74f9edbae/node_modules/.prisma/client/default"
-      ]
-    }
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "../../node_modules"
   ]
 }

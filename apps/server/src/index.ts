@@ -1,64 +1,13 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import { add, DatabaseApi } from '@texas-holdem/database-api';
-import { CustomEventEmitter } from './CustomEventEmitter';
-
-export interface EmitterEvents {
-  'timeout-tracker': {
-    gameId: number;
-    turnId: number;
-    untilTimeout: number;
-  };
-}
+import { buildApp } from './app';
 
 (async () => {
-  const app = express();
-
-  app.use(cors());
-
-  /*    const user = await createUser();
-    const api = new DatabaseApi();
-    const users = await api.user.findUsers();
-
-    console.log({ users }); */
-
-  console.log({ apikeys: { api: typeof DatabaseApi, add: typeof add } });
-
-  const instance = new DatabaseApi('testing stuff');
-  instance.test();
-
-  const result = add(1, 20);
-
-  console.log(result);
-
-  const events = new CustomEventEmitter<EmitterEvents>();
-
+  const app = await buildApp();
   const { PORT = 3000 } = process.env;
 
-  app.get('/', (req: Request, res: Response) => {
-    events.emit('timeout-tracker', {
-      gameId: 10,
-      turnId: 7,
-      untilTimeout: 10000,
-    });
-    res.send({
-      message: 'Application 1 Initialized',
-    });
-  });
-
-  events.on('timeout-tracker', parameters => {
-    console.log('Timeout tracker Running with parameters', parameters);
-
-    setTimeout(() => {
-      // Make database call to figure out what is current {turnId}
-      // If {turnId} same as received with parameters
-      // Change turn and inform players
-
-      console.log('Set timeout logic running');
-    }, 10000);
-  });
-
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-  });
+  try {
+    await app.listen({ port: Number(PORT) });
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
 })();
