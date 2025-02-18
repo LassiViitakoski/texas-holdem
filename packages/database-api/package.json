@@ -3,25 +3,21 @@
   "name": "@texas-holdem/database-api",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "tsc",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate"
+    "prepare": "prisma generate"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
-    "prisma": "^6.3.1",
-    "vite": "^6.1.0",
-    "vite-plugin-dts": "^4.5.0",
-    "vite-tsconfig-paths": "^5.1.4"
+    "prisma": "^6.4.0"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.1",
+    "@prisma/client": "^6.4.0",
     "pg": "^8.11.3"
   }
 }

@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../../node_modules/.prisma/client"
 }
 
 // generator erd {
@@ -25,7 +24,7 @@ model User {
   phone     String?
   role      UserRole  @default(BASIC)
   createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   accounts  Account[]
   players   Player[]
 
@@ -36,7 +35,7 @@ model Player {
   id        Int           @id @default(autoincrement())
   stack     Decimal
   createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
   user      User          @relation(fields: [userId], references: [id])
   game      Game          @relation(fields: [gameId], references: [id])
   userId    Int           @map("user_id")
@@ -51,7 +50,7 @@ model Account {
   balance   Decimal  @default(0.00)
   currency  Currency
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   user   User @relation(fields: [userId], references: [id])
   userId Int  @map("user_id")
@@ -64,7 +63,7 @@ model Card {
   suit         CardSuit
   value        CardValue
   createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
   roundPlayers RoundPlayer[]
 
   @@map("card")
@@ -78,7 +77,7 @@ model Game {
   rake           Decimal
   status         GameTableStatus
   createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
   blinds         Blind[]
   players        Player[]
   rounds         Round[]
@@ -91,7 +90,7 @@ model Blind {
   blindNumber Int      @map("blind_number")
   amount      Decimal
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
   games       Game[]
 
   @@map("blind")
@@ -102,7 +101,7 @@ model Round {
   pot        Decimal
   isFinished Boolean       @default(false) @map("is_finished")
   createdAt  DateTime      @default(now()) @map("created_at")
-  updatedAt  DateTime      @updatedAt @map("updated_at")
+  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
   game       Game          @relation(fields: [gameId], references: [id])
   gameId     Int           @map("game_id")
   players    RoundPlayer[]
@@ -116,7 +115,7 @@ model RoundPlayer {
   startingStack Decimal  @map("starting_stack")
   isWinner      Boolean  @map("is_winner")
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
   player   Player @relation(fields: [playerId], references: [id])
   round    Round  @relation(fields: [roundId], references: [id])
@@ -133,7 +132,7 @@ model Stage {
   id        Int                @id @default(autoincrement())
   type      RoundStage
   createdAt DateTime           @default(now()) @map("created_at")
-  updatedAt DateTime           @updatedAt @map("updated_at")
+  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at")
   round     Round              @relation(fields: [roundId], references: [id])
   roundId   Int                @map("round_id")
   players   RoundStagePlayer[]
@@ -146,7 +145,7 @@ model RoundStagePlayer {
   action        BettingRoundAction
   amountPayed   Decimal            @default(0.00) @map("amount_payed")
   createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
+  updatedAt     DateTime           @default(now()) @updatedAt @map("updated_at")
   roundPlayerId Int                @map("round_player_id")
   stageId       Int                @map("stage_id")
   player        RoundPlayer        @relation(fields: [roundPlayerId], references: [id])
