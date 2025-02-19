@@ -28,6 +28,7 @@ export default defineConfig({
       }
     }
   },
+  envPrefix: 'VITE_',
   test: {
     globals: true,
     environment: "jsdom",
