@@ -21,6 +21,9 @@ export class GameRepository {
           })),
         },
       },
+      include: {
+        blinds: true,
+      },
     });
   }
 
@@ -62,6 +65,23 @@ export class GameRepository {
             },
           },
         },
+      },
+    });
+  }
+
+  findAll() {
+    return this.client.game.findMany({
+      include: {
+        blinds: true,
+        players: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }

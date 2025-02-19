@@ -1,29 +1,39 @@
 import { Type } from '@sinclair/typebox';
 
-export const CreateGameSchema = Type.Object({
-  blinds: Type.Array(Type.Number()),
-  maxPlayers: Type.Number(),
-  buyIn: Type.Number(),
+export const CreateGameReqBody = Type.Object({
+  maxPlayers: Type.Number({ minimum: 2, maximum: 9 }),
+  blinds: Type.Array(Type.Number({ minimum: 1 }), { minItems: 2 }),
+  buyIn: Type.Number({ minimum: 1 }),
 });
 
 export const GameParams = Type.Object({
   id: Type.Number(),
 });
 
+export const ChipUnit = Type.Union([
+  Type.Literal('CHIP'),
+  Type.Literal('CASH'),
+]);
+
+export const GameStatus = Type.Union([
+  Type.Literal('WAITING'),
+  Type.Literal('ROUND_IN_PROGRESS'),
+  Type.Literal('INACTIVE'),
+]);
+
+// This ensures our runtime validation matches Prisma's types
 export const GameResponse = Type.Object({
   id: Type.Number(),
   minimumPlayers: Type.Number(),
   maximumPlayers: Type.Number(),
-  chipUnit: Type.Union([
-    Type.Literal('CHIP'),
-    Type.Literal('CASH'),
-  ]),
+  chipUnit: ChipUnit,
   rake: Type.Number(),
-  status: Type.Union([
-    Type.Literal('WAITING'),
-    Type.Literal('ROUND_IN_PROGRESS'),
-    Type.Literal('INACTIVE'),
-  ]),
+  status: GameStatus,
   createdAt: Type.String({ format: 'date-time' }),
   updatedAt: Type.String({ format: 'date-time' }),
+  blinds: Type.Array(Type.Object({
+    id: Type.Number(),
+    blindNumber: Type.Number(),
+    amount: Type.Number(),
+  })),
 });

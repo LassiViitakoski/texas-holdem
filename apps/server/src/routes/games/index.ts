@@ -1,11 +1,20 @@
 import { FastifyPluginAsync } from 'fastify';
+import { Type } from '@sinclair/typebox';
 import { gamesHandler } from './handler';
-import { CreateGameSchema, GameParams, GameResponse } from './schema';
+import { CreateGameReqBody, GameParams, GameResponse } from './schema';
 
 export const gamesRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.get('/', {
+    schema: {
+      response: {
+        200: Type.Array(GameResponse),
+      },
+    },
+  }, gamesHandler.getAll);
+
   fastify.post('/', {
     schema: {
-      body: CreateGameSchema,
+      body: CreateGameReqBody,
       response: {
         201: GameResponse,
       },

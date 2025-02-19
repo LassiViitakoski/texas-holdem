@@ -5,7 +5,19 @@ import { healthRoutes } from './routes/health';
 import { gamesRoutes } from './routes/games';
 
 export async function buildApp(): Promise<FastifyInstance> {
-  const app = Fastify()
+  const app = Fastify({
+    logger: {
+      level: 'info',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+          colorize: true,
+        },
+      },
+    },
+  })
     .withTypeProvider<TypeBoxTypeProvider>();
 
   // Register plugins
