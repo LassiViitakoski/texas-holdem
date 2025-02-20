@@ -1,7 +1,6 @@
-import { GameList } from "@/components/games/GameList";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router';
+import { GameList } from '@/components/game/GameList';
 
-export const Route = createFileRoute("/games/")({
+export const Route = createFileRoute('/games/')({
   component: GameList,
 });
-

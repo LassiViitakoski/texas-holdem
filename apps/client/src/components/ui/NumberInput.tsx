@@ -1,5 +1,5 @@
-import { Input } from '@/components/ui/Input';
 import { ComponentPropsWithoutRef, forwardRef } from 'react';
+import { Input } from '@/components/ui/Input';
 
 type NumberInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'type'> & {
   label?: string;
@@ -9,9 +9,7 @@ type NumberInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'type'> & {
 };
 
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
-  (props, ref) => {
-    return <Input type="number" ref={ref} {...props} />;
-  }
+  (props, ref) => <Input type="number" ref={ref} {...props} />,
 );
 
-NumberInput.displayName = 'NumberInput'; 
+NumberInput.displayName = 'NumberInput';

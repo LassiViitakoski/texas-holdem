@@ -6,7 +6,7 @@ const API_BASE = '/api/games';
 export function useCreateGame() {
   return useMutation({
     mutationFn: async (payload: CreateGamePayload) => {
-      console.log('Payload', { payload })
+      console.log('Payload', { payload });
       const response = await fetch(API_BASE, {
         method: 'POST',
         headers: {
@@ -52,4 +52,4 @@ export function useGames() {
       return response.json() as Promise<Game[]>;
     },
   });
-} 
+}

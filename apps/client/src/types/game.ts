@@ -24,4 +24,4 @@ export type Game = {
   createdAt: string;
   updatedAt: string;
   blinds: Blind[];
-}; 
+};
