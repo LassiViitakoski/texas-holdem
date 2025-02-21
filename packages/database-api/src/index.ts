@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { UserRepository } from './repositories/user-repository';
-import { GameRepository } from './repositories/game-repository';
+import { GameRepository, UserRepository } from './repositories';
 
 export class DatabaseApi {
   private static instance: DatabaseApi;

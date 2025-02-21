@@ -9,12 +9,21 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
     "node_modules",
     "../../node_modules"
-  ]
+  ],
+  "ts-node": {
+    "logError": true,
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

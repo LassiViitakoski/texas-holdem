@@ -4,9 +4,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev:server": "pnpm --filter server dev",
-    "dev:server-app": "pnpm --filter server dev",
-    "dev:client": "pnpm --filter client dev"
+    "dev": "pnpm run dev:all",
+    "dev:all": "pnpm --parallel --filter \"@texas-holdem/api-server\" --filter \"@texas-holdem/client\" --filter \"@texas-holdem/game-server\" dev",
+    "dev:api": "pnpm --filter \"@texas-holdem/api-server\" dev",
+    "dev:client": "pnpm --filter \"@texas-holdem/client\" dev",
+    "dev:game-server": "pnpm --filter \"@texas-holdem/game-server\" dev"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",

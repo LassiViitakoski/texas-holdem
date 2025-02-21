@@ -13,7 +13,8 @@
 
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { DatabaseApi } from '@texas-holdem/database-api';
-import { CreateGameReqBody, GameParams } from './schema';
+import { CreateGameReqBody, GameParams } from '@/routes/games/schema';
+import { publishGameEvent } from '../../services/redis';
 
 const db = DatabaseApi.getInstance();
 
@@ -21,13 +22,15 @@ export async function createGameHandler(
   request: FastifyRequest<{ Body: typeof CreateGameReqBody }>,
   reply: FastifyReply,
 ) {
-  console.log('Create Game Handler', { request: request.body });
   const { blinds, maxPlayers /* buyIn */ } = request.body;
-  console.log('Blinds', { blinds });
-  console.log('Max Players', { maxPlayers });
   const game = await db.game.create({
     blinds,
     maxPlayers,
+  });
+  await publishGameEvent('game:created', {
+    gameId: game.id,
+    players: game.players,
+    blinds: game.blinds,
   });
 
   console.log('Game', { game });

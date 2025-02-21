@@ -6,7 +6,6 @@ const API_BASE = '/api/games';
 export function useCreateGame() {
   return useMutation({
     mutationFn: async (payload: CreateGamePayload) => {
-      console.log('Payload', { payload });
       const response = await fetch(API_BASE, {
         method: 'POST',
         headers: {
@@ -36,6 +35,7 @@ export function useGame(id: number) {
 
       return response.json() as Promise<Game>;
     },
+    retry: false
   });
 }
 
@@ -43,13 +43,20 @@ export function useGames() {
   return useQuery({
     queryKey: ['games'],
     queryFn: async () => {
-      const response = await fetch(API_BASE);
+      try {
+        const response = await fetch(API_BASE);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch games');
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          throw new Error(error?.message || 'Unexepected error');
+        }
+
+        return response.json() as Promise<Game[]>;
+      } catch (error) {
+        throw new Error(`Fetching games failed: ${error instanceof Error ? error.message : 'Unexpected error'}`);
       }
-
-      return response.json() as Promise<Game[]>;
     },
+    retry: false,
+    throwOnError: false,
   });
 }

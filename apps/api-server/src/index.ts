@@ -1,6 +1,7 @@
 import { buildApp } from './app';
 
 (async () => {
+  console.log('Starting API server...');
   const app = await buildApp();
   const { PORT = 3000 } = process.env;
 

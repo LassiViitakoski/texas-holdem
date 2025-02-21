@@ -4,5 +4,6 @@ module.exports = {
     'no-console': 'off',
     'import/prefer-default-export': 'off',
     'linebreak-style': 'off',
-    'no-underscore-dangle': 'off'
+    'no-underscore-dangle': 'off',
+    'import/extensions': 'off',
 };

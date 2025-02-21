@@ -21,6 +21,7 @@ export const CreateGameForm = () => {
   const createGame = useCreateGame();
   const navigate = useNavigate();
 
+
   const form = useForm<GameFormValues>({
     defaultValues: {
       maxPlayers: 3,
@@ -120,12 +121,6 @@ export const CreateGameForm = () => {
       >
         {form.state.isSubmitting ? 'Creating...' : 'Create Game'}
       </Button>
-
-      {import.meta.env.DEV && (
-        <pre className="mt-4 p-4 bg-gray-100 rounded text-xs">
-          {JSON.stringify(form.state, null, 2)}
-        </pre>
-      )}
     </form>
   );
 };

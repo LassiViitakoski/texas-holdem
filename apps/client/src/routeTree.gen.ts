@@ -124,12 +124,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/games/$gameId' | '/games/create' | '/games' | '/profile'
   id:
-  | '__root__'
-  | '/'
-  | '/games/$gameId'
-  | '/games/create'
-  | '/games/'
-  | '/profile/'
+    | '__root__'
+    | '/'
+    | '/games/$gameId'
+    | '/games/create'
+    | '/games/'
+    | '/profile/'
   fileRoutesById: FileRoutesById
 }
 
@@ -176,7 +176,7 @@ export const routeTree = rootRoute
       "filePath": "games/create.tsx"
     },
     "/games/": {
-      "filePath": "games/index.ts"
+      "filePath": "games/index.tsx"
     },
     "/profile/": {
       "filePath": "profile/index.ts"

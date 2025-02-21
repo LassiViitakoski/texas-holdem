@@ -23,6 +23,7 @@ export class GameRepository {
       },
       include: {
         blinds: true,
+        players: true,
       },
     });
   }
