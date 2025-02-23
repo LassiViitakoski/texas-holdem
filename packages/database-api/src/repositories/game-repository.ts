@@ -13,7 +13,6 @@ export class GameRepository {
         minimumPlayers: 2,
         chipUnit: 'CHIP',
         rake: 0.00,
-        status: 'WAITING',
         blinds: {
           create: data.blinds.map((amount, index) => ({
             blindNumber: index + 1,
@@ -28,30 +27,10 @@ export class GameRepository {
     });
   }
 
-  findById(id: number) {
-    return this.client.game.findUnique({
-      where: { id },
-      include: {
-        players: true,
-        blinds: true,
-        rounds: {
-          where: { isFinished: false },
-          include: {
-            stages: {
-              include: {
-                players: true,
-              },
-            },
-          },
-        },
-      },
-    });
-  }
-
   findActiveGames() {
     return this.client.game.findMany({
       where: {
-        status: 'ROUND_IN_PROGRESS',
+        isInactive: false,
       },
       include: {
         rounds: {
@@ -59,30 +38,20 @@ export class GameRepository {
             isFinished: false,
           },
           include: {
-            stages: {
+            roundPlayers: true,
+            bettingRounds: {
               include: {
-                players: true,
+                players: {
+                  include: {
+                    actions: true,
+                  },
+                },
               },
             },
           },
         },
-      },
-    });
-  }
-
-  findAll() {
-    return this.client.game.findMany({
-      include: {
         blinds: true,
-        players: {
-          select: {
-            id: true,
-            userId: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
+        players: true,
       },
     });
   }

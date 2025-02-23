@@ -25,6 +25,7 @@ model User {
   role      UserRole  @default(BASIC)
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
   accounts  Account[]
   players   Player[]
 
@@ -33,13 +34,15 @@ model User {
 
 model Player {
   id        Int           @id @default(autoincrement())
-  stack     Decimal
+  stack     Decimal       
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+
   user      User          @relation(fields: [userId], references: [id])
   game      Game          @relation(fields: [gameId], references: [id])
   userId    Int           @map("user_id")
   gameId    Int           @map("game_id")
+  
   rounds    RoundPlayer[]
 
   @@map("player")
@@ -59,12 +62,14 @@ model Account {
 }
 
 model Card {
-  id           Int           @id @default(autoincrement())
-  suit         CardSuit
-  value        CardValue
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
-  roundPlayers RoundPlayer[]
+  id              Int           @id @default(autoincrement())
+  suit            CardSuit
+  rank            CardRank
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+  roundPlayers    RoundPlayer[]
+  roundCommunity  RoundCommunityCard[]
 
   @@map("card")
 }
@@ -75,9 +80,11 @@ model Game {
   maximumPlayers Int             @map("maximum_players")
   chipUnit       ChipUnit        @map("chip_unit")
   rake           Decimal
-  status         GameTableStatus
+  status         GameStatus?
+  isInactive     Boolean         @default(false) @map("is_inactive")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
+
   blinds         Blind[]
   players        Player[]
   rounds         Round[]
@@ -91,67 +98,106 @@ model Blind {
   amount      Decimal
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
   games       Game[]
 
   @@map("blind")
 }
 
 model Round {
-  id         Int           @id @default(autoincrement())
-  pot        Decimal
-  isFinished Boolean       @default(false) @map("is_finished")
-  createdAt  DateTime      @default(now()) @map("created_at")
-  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
-  game       Game          @relation(fields: [gameId], references: [id])
-  gameId     Int           @map("game_id")
-  players    RoundPlayer[]
-  stages     Stage[]
+  id              Int           @id @default(autoincrement())
+  pot             Decimal
+  isFinished      Boolean       @default(false) @map("is_finished")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  game            Game          @relation(fields: [gameId], references: [id])
+  gameId          Int           @map("game_id")
+
+  roundPlayers   RoundPlayer[]
+  bettingRounds  BettingRound[]
+  communityCards  RoundCommunityCard[]
 
   @@map("round")
 }
 
+model RoundCommunityCard {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  round     Round    @relation(fields: [roundId], references: [id])
+  roundId   Int      @map("round_id")
+  
+  card      Card     @relation(fields: [cardId], references: [id])
+  cardId    Int      @map("card_id")
+
+  @@map("round_community_card")
+}
+
 model RoundPlayer {
-  id            Int      @id @default(autoincrement())
-  startingStack Decimal  @map("starting_stack")
-  isWinner      Boolean  @map("is_winner")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  id                      Int                   @id @default(autoincrement())
+  initialStack            Decimal               @map("initial_stack")
+  isWinner                Boolean               @default(false) @map("is_winner")
+  sequence                Int                   @map("sequence")
+  createdAt               DateTime              @default(now()) @map("created_at")
+  updatedAt               DateTime              @default(now()) @updatedAt @map("updated_at")
 
-  player   Player @relation(fields: [playerId], references: [id])
-  round    Round  @relation(fields: [roundId], references: [id])
-  playerId Int    @map("player_id")
-  roundId  Int    @map("round_id")
+  player                  Player                @relation(fields: [playerId], references: [id])
+  round                   Round                 @relation(fields: [roundId], references: [id])
+  playerId                Int                   @map("player_id")
+  roundId                 Int                   @map("round_id")
 
-  stages RoundStagePlayer[]
-  cards  Card[]
+  cards                   Card[]
+  bettingRounds           BettingRoundPlayer[]
 
   @@map("round_player")
 }
 
-model Stage {
-  id        Int                @id @default(autoincrement())
-  type      RoundStage
-  createdAt DateTime           @default(now()) @map("created_at")
-  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at")
-  round     Round              @relation(fields: [roundId], references: [id])
-  roundId   Int                @map("round_id")
-  players   RoundStagePlayer[]
+model BettingRound {
+  id          Int                   @id @default(autoincrement())
+  type        BettingRoundType
+  isFinished  Boolean               @default(false) @map("is_finished")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at")
+  
+  round       Round                 @relation(fields: [roundId], references: [id])
+  roundId     Int                   @map("round_id")
+  
+  players     BettingRoundPlayer[]
 
-  @@map("stage")
+  @@map("betting_round")
 }
 
-model RoundStagePlayer {
-  id            Int                @id @default(autoincrement())
-  action        BettingRoundAction
-  amountPayed   Decimal            @default(0.00) @map("amount_payed")
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @default(now()) @updatedAt @map("updated_at")
-  roundPlayerId Int                @map("round_player_id")
-  stageId       Int                @map("stage_id")
-  player        RoundPlayer        @relation(fields: [roundPlayerId], references: [id])
-  stage         Stage              @relation(fields: [stageId], references: [id])
+model BettingRoundPlayer {
+  id              Int                     @id @default(autoincrement())
+  initialStack    Decimal                 @map("initial_stack")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @default(now()) @updatedAt @map("updated_at")
 
-  @@map("round_stage_player")
+  bettingRound    BettingRound            @relation(fields: [bettingRoundId], references: [id])
+  bettingRoundId  Int                     @map("betting_round_id")
+
+  roundPlayer     RoundPlayer             @relation(fields: [roundPlayerId], references: [id])
+  roundPlayerId   Int                     @map("round_player_id")
+
+  actions         BettingRoundAction[]
+
+  @@map("betting_round_player")
+}
+
+model BettingRoundAction {
+  id              Int                           @id @default(autoincrement())
+  sequence        Int                     
+  type            BettingRoundActionType
+  amount          Decimal                       @default(0.00) @map("amount")
+  createdAt       DateTime                      @default(now()) @map("created_at")
+  updatedAt       DateTime                      @default(now()) @updatedAt @map("updated_at")
+  
+  bettingRoundPlayer    BettingRoundPlayer      @relation(fields: [bettingRoundPlayerId], references: [id])
+  bettingRoundPlayerId  Int                     @map("betting_round_player_id")
+
+  @@map("betting_round_action")
 }
 
 enum Currency {
@@ -177,28 +223,29 @@ enum ChipUnit {
   @@map("CHIP_UNIT")
 }
 
-enum GameTableStatus {
+// Figure out if we need to have a status for when the game or is isinactive 
+enum GameStatus {
   ROUND_IN_PROGRESS
   WAITING
-  INACTIVE
 
-  @@map("GAME_TABLE_STATUS")
+  @@map("GAME_STATUS")
 }
 
-enum RoundStage {
+enum BettingRoundType {
   PREFLOP
   FLOP
   TURN
   RIVER
 
-  @@map("ROUND_STAGE")
+  @@map("BETTING_ROUND")
 }
 
-enum BettingRoundAction {
-  BET
+enum BettingRoundActionType {
+  BLIND
   CALL
   CHECK
   FOLD
+  RAISE
 
   @@map("BETTING_ROUND_ACTION")
 }
@@ -212,7 +259,7 @@ enum CardSuit {
   @@map("CARD_SUIT")
 }
 
-enum CardValue {
+enum CardRank {
   TWO
   THREE
   FOUR
@@ -227,5 +274,5 @@ enum CardValue {
   KING
   ACE
 
-  @@map("CARD_VALUE")
+  @@map("CARD_RANK")
 }

@@ -1,6 +1,4 @@
-export type ChipUnit = 'CHIP';
-
-export type GameStatus = 'WAITING' | 'ROUND_IN_PROGRESS' | 'INACTIVE';
+import { ChipUnit, GameStatus } from '@texas-holdem/shared-types';
 
 export type CreateGamePayload = {
   maxPlayers: number;

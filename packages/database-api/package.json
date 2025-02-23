@@ -12,6 +12,7 @@
     "prepare": "prisma generate"
   },
   "devDependencies": {
+    "@texas-holdem/shared-types": "workspace:*",
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
     "prisma": "^6.4.0"

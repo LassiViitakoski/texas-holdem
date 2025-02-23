@@ -23,19 +23,12 @@ export async function createGameHandler(
   reply: FastifyReply,
 ) {
   const { blinds, maxPlayers /* buyIn */ } = request.body;
-  const game = await db.game.create({
+  const createdGame = await db.game.create({
     blinds,
     maxPlayers,
   });
-  await publishGameEvent('game:created', {
-    gameId: game.id,
-    players: game.players,
-    blinds: game.blinds,
-  });
-
-  console.log('Game', { game });
-
-  return reply.code(201).send(game);
+  await publishGameEvent('game:created', JSON.stringify(createdGame));
+  return reply.code(201).send(createdGame);
 }
 
 export async function getGameHandler(

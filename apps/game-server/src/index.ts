@@ -1,70 +1,52 @@
-import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 import { Redis } from 'ioredis';
-import { DatabaseApi } from '@texas-holdem/database-api';
 import { envConfig } from './config';
+import { Game } from './game';
+import { GameManager } from './game-manager';
+import { RedisMessage, GameEvent } from './types/redis';
 
-const scheduler = new ToadScheduler();
-const databaseApi = DatabaseApi.getInstance();
+(async () => {
+  const gameManager = GameManager.getInstance();
+  const redis = new Redis(envConfig.REDIS_URL);
 
-const redis = new Redis(envConfig.REDIS_URL);
+  try {
+    // Initialize game manager with active games
+    await gameManager.initialize();
 
-redis.subscribe('game-events', (err, result) => {
-  if (err) {
-    console.error('Failed to subscribe:', err);
+    console.log('Game manager initialized with active games', JSON.stringify(gameManager.getAllGames()));
+
+    const waitingGames = gameManager.getWaitingGames();
+
+    waitingGames.forEach((game) => {
+      if (game.players.length >= game.minPlayers && game.players.length <= game.maxPlayers) {
+        game.startNewRound().then(() => {
+          console.log('New round successfully started');
+        });
+      }
+    });
+
+    redis.subscribe('game-events', (err, result) => {
+      if (err) {
+        console.error('Failed to subscribe:', err);
+      }
+      console.log('Subscribed to game-events', result);
+    });
+
+    redis.on('message', async (channel, message) => {
+      const { event, payload } = JSON.parse(message) as RedisMessage<GameEvent>;
+
+      console.log('Message received:', message);
+
+      if (event === 'game:created') {
+        gameManager.addGame(
+          new Game(payload as RedisMessage<'game:created'>['payload']),
+        );
+
+        console.log('Game added to game manager', JSON.stringify(gameManager.getAllGames()));
+      }
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-
-  console.log('Subscribed to game-events', result);
-});
-
-redis.on('message', async (channel, message) => {
-  const { event, payload } = JSON.parse(message);
-
-  console.log('Message received:', message);
-
-  /* switch (event) {
-    case 'game:created':
-      await scheduleGameStart(payload);
-      break;
-    // Handle other events
-  } */
-});
-
-// Create an async task for checking game states
-const checkGameStatesTask = new AsyncTask(
-  'check-game-states',
-  async () => {
-    try {
-      // Use the new game repository
-    } catch (error) {
-      console.error('Error in game state check task:', error);
-    }
-  },
-  (err: Error) => {
-    console.error('Failed to check game states:', err);
-  },
-);
-
-// Create a job that runs every second
-/*
-const job = new SimpleIntervalJob(
-  { seconds: 1, runImmediately: true },
-  checkGameStatesTask,
-  {
-    preventOverrun: true,
-  },
-);
-
-// Add the job to the scheduler
-scheduler.addSimpleIntervalJob(job);
-
-// Handle application shutdown
-process.on('SIGINT', () => {
-  scheduler.stop();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  scheduler.stop();
-  process.exit(0);
-});
-*/
+})()
+  .catch(console.error);

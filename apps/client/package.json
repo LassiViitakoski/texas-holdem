@@ -27,6 +27,7 @@
     "@tailwindcss/vite": "^4.0.7",
     "@tanstack/router-plugin": "^1.106.0",
     "@testing-library/react": "^16.2.0",
+    "@texas-holdem/shared-types": "workspace:*",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
