@@ -7,7 +7,7 @@ import { BlindInputs } from './BlindInputs';
 import { useCreateGame } from '@/hooks/useGames';
 
 const gameFormSchema = z.object({
-  maxPlayers: z.number().min(2).max(9),
+  maximumPlayers: z.number().min(2).max(9),
   buyIn: z.number().min(1),
   blinds: z.array(z.number()).length(2).refine(
     ([small, big]) => big > small,
@@ -21,10 +21,9 @@ export const CreateGameForm = () => {
   const createGame = useCreateGame();
   const navigate = useNavigate();
 
-
   const form = useForm<GameFormValues>({
     defaultValues: {
-      maxPlayers: 3,
+      maximumPlayers: 3,
       buyIn: 100,
       blinds: [10, 20],
     },
@@ -60,7 +59,7 @@ export const CreateGameForm = () => {
       className="space-y-4 max-w-md mx-auto"
     >
       <form.Field
-        name="maxPlayers"
+        name="maximumPlayers"
         children={(field) => (
           <div>
             <NumberInput

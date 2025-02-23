@@ -1,32 +1,31 @@
 import { PrismaClient } from '@prisma/client';
+import type { Round, BettingRoundPlayerAction } from '@texas-holdem/shared-types';
 
-interface CreateRoundData {
-  gameId: number;
-  players: {
-    id: number;
-    blind: number;
-    stack: number;
-    cards: number[];
-  }[];
-}
+type CreateRoundData = Pick<Round<'UNPERSISTED'>, 'pot' | 'players'> & { gameId: number; actions: BettingRoundPlayerAction<'UNPERSISTED'>[] };
 
 export class RoundRepository {
   constructor(private client: PrismaClient) {}
 
   public async create(data: CreateRoundData) {
+    data.players.map((s) => s);
     return this.client.$transaction(async (tx) => {
       // 2. Create round with players
       const round = await tx.round.create({
         data: {
-          pot: data.players.reduce((acc, player) => acc + player.blind, 0),
+          pot: data.pot,
           gameId: data.gameId,
           roundPlayers: {
-            create: data.players.map((player, index) => ({
-              playerId: player.id,
-              initialStack: player.stack,
-              sequence: index + 1,
+            create: data.players.map(({
+              stack,
+              sequence,
+              cards,
+              playerId,
+            }) => ({
+              playerId,
+              stack,
+              sequence,
               cards: {
-                connect: player.cards.map((cardId) => ({ id: cardId })),
+                connect: cards.map((card) => ({ id: card.id })),
               },
             })),
           },
@@ -35,28 +34,34 @@ export class RoundRepository {
       });
 
       // 4. Create betting round players in bulk
-      await tx.bettingRound.create({
+      const firstBettingRound = await tx.bettingRound.create({
         data: {
           roundId: round.id,
           type: 'PREFLOP',
           players: {
             create: round.roundPlayers.map((roundPlayer, index) => ({
               roundPlayer: { connect: { id: roundPlayer.id } },
-              initialStack: roundPlayer.initialStack,
-              actions: data.players[index].blind > 0 ? {
+              stack: roundPlayer.stack,
+              sequence: roundPlayer.sequence,
+              actions: data.actions[index] ? {
                 create: {
-                  sequence: index + 1,
-                  type: 'BLIND',
-                  amount: data.players[index].blind,
+                  sequence: data.actions[index].sequence,
+                  type: data.actions[index].type,
+                  amount: data.actions[index].amount,
                 },
               }
                 : undefined,
+
             })),
           },
         },
+        include: { players: { include: { actions: true } } },
       });
 
-      return round;
+      return {
+        ...round,
+        bettingRounds: [firstBettingRound],
+      };
     });
   }
 }

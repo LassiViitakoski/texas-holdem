@@ -22,10 +22,10 @@ export async function createGameHandler(
   request: FastifyRequest<{ Body: typeof CreateGameReqBody }>,
   reply: FastifyReply,
 ) {
-  const { blinds, maxPlayers /* buyIn */ } = request.body;
+  const { blinds, maximumPlayers /* buyIn */ } = request.body;
   const createdGame = await db.game.create({
     blinds,
-    maxPlayers,
+    maximumPlayers,
   });
   await publishGameEvent('game:created', JSON.stringify(createdGame));
   return reply.code(201).send(createdGame);
@@ -37,7 +37,7 @@ export async function getGameHandler(
 ) {
   const { id } = request.params;
 
-  const game = await db.game.findById(id);
+  const game = null;// await db.game.findById(id);
 
   console.log({ game });
 
@@ -52,7 +52,7 @@ export async function getAllGamesHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  const games = await db.game.findAll();
+  const games = null;// await db.game.findAll();
   return reply.send(games);
 }
 

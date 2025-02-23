@@ -2,7 +2,7 @@ import { Redis } from 'ioredis';
 import { envConfig } from './config';
 import { Game } from './game';
 import { GameManager } from './game-manager';
-import { RedisMessage, GameEvent } from './types/redis';
+import { RedisMessage, InboundGameEvent } from './types/redis';
 
 (async () => {
   const gameManager = GameManager.getInstance();
@@ -17,22 +17,24 @@ import { RedisMessage, GameEvent } from './types/redis';
     const waitingGames = gameManager.getWaitingGames();
 
     waitingGames.forEach((game) => {
-      if (game.players.length >= game.minPlayers && game.players.length <= game.maxPlayers) {
-        game.startNewRound().then(() => {
-          console.log('New round successfully started');
+      if (game.isReadyToStart()) {
+        game.startNewRound().then((round) => {
+          console.log('New round successfully started with follwing data', JSON.stringify(round, null, 2));
+
+          // Publish messages to REST API to notify clients of new round
         });
       }
     });
 
-    redis.subscribe('game-events', (err, result) => {
+    redis.subscribe('game-events-api-server', (err, result) => {
       if (err) {
         console.error('Failed to subscribe:', err);
       }
-      console.log('Subscribed to game-events', result);
+      console.log('Subscribed to game-events-api-server', result);
     });
 
     redis.on('message', async (channel, message) => {
-      const { event, payload } = JSON.parse(message) as RedisMessage<GameEvent>;
+      const { event, payload } = JSON.parse(message) as RedisMessage<InboundGameEvent>;
 
       console.log('Message received:', message);
 

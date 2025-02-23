@@ -1,10 +1,12 @@
+import type { Decimal } from 'decimal.js';
+
 export type GameStatus = 'WAITING' | 'ROUND_IN_PROGRESS' | 'INACTIVE';
 
 export type ChipUnit = 'CHIP' | 'CASH';
 
 export type BettingRoundType = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER';
 
-export type BettingRoundActionType = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
+export type BettingRoundPlayerActionType = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
 
 export type CardRank = 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'SIX' | 'SEVEN' | 'NINE' | 'TEN' | 'JACK' | 'QUEEN' | 'KING' | 'ACE';
 
@@ -26,50 +28,71 @@ export type CardRankMap = {
   ACE: [1, 14],
 }
 
-export type Player = {
+export type Card = {
   id: number;
-  userId: number;
-  stack: number;
+  rank: CardRank;
+  suit: CardSuit;
+}
+
+export type Blind<T extends number | Decimal> = {
+  id: number;
+  sequence: number;
+  amount: T;
 };
 
 export type Game = {
   id: number;
-  blinds: number[];
-  maxPlayers: number;
-  minPlayers: number;
+  blinds: Blind<Decimal>[];
+  maximumPlayers: number;
+  minimumPlayers: number;
   chipUnit: ChipUnit;
-  rake: number;
+  rake: Decimal;
   players: Player[];
-  status?: GameStatus;
   activeRound?: Round;
 };
 
-export type Round = {
-  id: number;
-  pot: number;
+export type Round<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
+  id: Persisted extends "PERSISTED" ? number : number | undefined;
+  pot: Decimal;
   isFinished: boolean;
   bettingRounds: BettingRound[];
-  players: RoundPlayer[];
-}
-
-export type RoundPlayer = {
-  id: number;
-  initialStack: number;
-  playerId: number;
-}
+  players: RoundPlayer<Persisted>[];
+};
 
 export type BettingRound = {
   id: number;
   type: BettingRoundType;
   isFinished: boolean;
-  players?: Player[]; // TODO
-  actions: BettingRoundAction[];
-}
+  players: BettingRoundPlayer[];
+};
 
-export type BettingRoundAction = {
+export type Player = {
   id: number;
-  type: BettingRoundActionType;
+  userId: number;
+  stack: Decimal;
+};
+
+export type RoundPlayer<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
+  id: Persisted extends "PERSISTED" ? number : number | undefined;
+  stack: Decimal;
   sequence: number;
-  amount: number;
-  playerId?: number; // TODO
-}
+  playerId: number;
+  cards: Card[];
+};
+
+export type BettingRoundPlayer = {
+  id: number;
+  stack: Decimal;
+  sequence: number;
+  roundPlayerId: number;
+  actions: BettingRoundPlayerAction[];
+};
+
+export type BettingRoundPlayerAction<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
+  id: Persisted extends "PERSISTED" ? number : number | undefined;
+  type: BettingRoundPlayerActionType;
+  sequence: number;
+  amount: Decimal;
+  bettingRoundPlayerId: Persisted extends "PERSISTED" ? number : number | undefined;
+};
+

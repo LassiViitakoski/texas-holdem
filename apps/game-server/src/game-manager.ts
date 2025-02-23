@@ -29,52 +29,17 @@ export class GameManager {
     }
 
     const databaseApi = DatabaseApi.getInstance();
+
     const games = await databaseApi.game.findActiveGames();
 
-    this.games = games.map((game) => {
-      const activeRound = game.rounds.find((round) => !round.isFinished);
+    // TODO for later: figure out how to initialize game with active round ongoing.
+    this.games = games.map((game) => new Game({
+      ...game,
+      blinds: game.blinds.sort((a, b) => a.sequence - b.sequence),
+    }));
 
-      return new Game({
-        id: game.id,
-        blinds: game.blinds
-          .sort((a, b) => a.blindNumber - b.blindNumber)
-          .map((blind) => blind.amount.toNumber()),
-        maxPlayers: game.maximumPlayers,
-        minPlayers: game.minimumPlayers,
-        chipUnit: game.chipUnit,
-        rake: game.rake.toNumber(),
-        players: game.players.map((player) => ({
-          id: player.id,
-          userId: player.userId,
-          stack: player.stack.toNumber(),
-        })),
-        activeRound: activeRound ? {
-          id: activeRound?.id,
-          pot: activeRound?.pot.toNumber(),
-          isFinished: activeRound?.isFinished,
-          players: activeRound.roundPlayers.map((roundPlayer) => ({
-            id: roundPlayer.id,
-            initialStack: roundPlayer.initialStack.toNumber(),
-            playerId: roundPlayer.playerId,
-          })),
-          bettingRounds: activeRound.bettingRounds.map((bettingRound) => ({
-            id: bettingRound.id,
-            type: bettingRound.type,
-            isFinished: bettingRound.isFinished,
-            actions: bettingRound.players
-              .flatMap((player) => player.actions)
-              .sort((a, b) => a.sequence - b.sequence)
-              .map((action) => ({
-                id: action.id,
-                type: action.type,
-                amount: action.amount.toNumber(),
-                sequence: action.sequence,
-              })),
-          })),
-        } : undefined,
+    await databaseApi.game.clearRounds();
 
-      });
-    });
     this.initialized = true;
   }
 

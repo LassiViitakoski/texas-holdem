@@ -94,7 +94,7 @@ model Game {
 
 model Blind {
   id          Int      @id @default(autoincrement())
-  blindNumber Int      @map("blind_number")
+  sequence    Int      
   amount      Decimal
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -137,7 +137,7 @@ model RoundCommunityCard {
 
 model RoundPlayer {
   id                      Int                   @id @default(autoincrement())
-  initialStack            Decimal               @map("initial_stack")
+  stack                   Decimal               @map("stack")
   isWinner                Boolean               @default(false) @map("is_winner")
   sequence                Int                   @map("sequence")
   createdAt               DateTime              @default(now()) @map("created_at")
@@ -171,7 +171,8 @@ model BettingRound {
 
 model BettingRoundPlayer {
   id              Int                     @id @default(autoincrement())
-  initialStack    Decimal                 @map("initial_stack")
+  stack           Decimal                 @map("stack")
+  sequence        Int                     
   createdAt       DateTime                @default(now()) @map("created_at")
   updatedAt       DateTime                @default(now()) @updatedAt @map("updated_at")
 
@@ -181,15 +182,15 @@ model BettingRoundPlayer {
   roundPlayer     RoundPlayer             @relation(fields: [roundPlayerId], references: [id])
   roundPlayerId   Int                     @map("round_player_id")
 
-  actions         BettingRoundAction[]
+  actions         BettingRoundPlayerAction[]
 
   @@map("betting_round_player")
 }
 
-model BettingRoundAction {
+model BettingRoundPlayerAction {
   id              Int                           @id @default(autoincrement())
   sequence        Int                     
-  type            BettingRoundActionType
+  type            BettingRoundPlayerActionType
   amount          Decimal                       @default(0.00) @map("amount")
   createdAt       DateTime                      @default(now()) @map("created_at")
   updatedAt       DateTime                      @default(now()) @updatedAt @map("updated_at")
@@ -197,7 +198,7 @@ model BettingRoundAction {
   bettingRoundPlayer    BettingRoundPlayer      @relation(fields: [bettingRoundPlayerId], references: [id])
   bettingRoundPlayerId  Int                     @map("betting_round_player_id")
 
-  @@map("betting_round_action")
+  @@map("betting_round_player_action")
 }
 
 enum Currency {
@@ -240,14 +241,14 @@ enum BettingRoundType {
   @@map("BETTING_ROUND")
 }
 
-enum BettingRoundActionType {
+enum BettingRoundPlayerActionType {
   BLIND
   CALL
   CHECK
   FOLD
   RAISE
 
-  @@map("BETTING_ROUND_ACTION")
+  @@map("BETTING_ROUND_PLAYER_ACTION")
 }
 
 enum CardSuit {

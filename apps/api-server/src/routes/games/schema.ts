@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 export const CreateGameReqBody = Type.Object({
-  maxPlayers: Type.Number({ minimum: 2, maximum: 9 }),
+  maximumPlayers: Type.Number({ minimum: 2, maximum: 9 }),
   blinds: Type.Array(Type.Number({ minimum: 1 }), { minItems: 2 }),
   buyIn: Type.Number({ minimum: 1 }),
 });
@@ -33,7 +33,7 @@ export const GameResponse = Type.Object({
   updatedAt: Type.String({ format: 'date-time' }),
   blinds: Type.Array(Type.Object({
     id: Type.Number(),
-    blindNumber: Type.Number(),
+    sequence: Type.Number(),
     amount: Type.Number(),
   })),
 });

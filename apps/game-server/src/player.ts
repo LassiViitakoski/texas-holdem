@@ -1,4 +1,5 @@
-import { Player as PlayerType } from '@texas-holdem/shared-types';
+import type { Player as PlayerType } from '@texas-holdem/shared-types';
+import Decimal from 'decimal.js';
 
 type PlayerConstructorParams = PlayerType;
 
@@ -7,11 +8,11 @@ export class Player {
 
   public userId: number;
 
-  public chips: number;
+  public stack: Decimal;
 
   constructor(params: PlayerConstructorParams) {
     this.id = params.id;
     this.userId = params.userId;
-    this.chips = params.chips;
+    this.stack = params.stack;
   }
 }

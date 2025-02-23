@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@texas-holdem/database-api": "workspace:*",
+    "decimal.js": "^10.5.0",
     "dotenv": "^16.4.7",
     "ioredis": "^5.5.0",
     "toad-scheduler": "^3.0.1",

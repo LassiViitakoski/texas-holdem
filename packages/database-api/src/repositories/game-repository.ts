@@ -5,17 +5,17 @@ export class GameRepository {
 
   create(data: {
     blinds: number[];
-    maxPlayers: number;
+    maximumPlayers: number;
   }) {
     return this.client.game.create({
       data: {
-        maximumPlayers: data.maxPlayers,
+        maximumPlayers: data.maximumPlayers,
         minimumPlayers: 2,
         chipUnit: 'CHIP',
         rake: 0.00,
         blinds: {
           create: data.blinds.map((amount, index) => ({
-            blindNumber: index + 1,
+            sequence: index,
             amount,
           })),
         },
@@ -54,5 +54,14 @@ export class GameRepository {
         players: true,
       },
     });
+  }
+
+  async clearRounds() {
+    await this.client.bettingRoundPlayerAction.deleteMany();
+    await this.client.bettingRoundPlayer.deleteMany();
+    await this.client.bettingRound.deleteMany();
+    await this.client.roundPlayer.deleteMany();
+    await this.client.round.deleteMany();
+    console.log('Rounds cleared');
   }
 }

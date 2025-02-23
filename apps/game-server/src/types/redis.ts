@@ -1,6 +1,8 @@
 import { Game } from '@/game';
 
-export type GameEvent = 'game:created' | 'game:started' | 'game:finished';
+export type InboundGameEvent = 'game:created' | 'game:started' | 'game:finished';
+
+export type OutboundGameEvent = 'round:started' | 'round:finished' | 'player:action';
 
 export type GameEventPayload = {
   'game:created': Game;
@@ -8,7 +10,7 @@ export type GameEventPayload = {
   'game:finished': { gameId: number };
 };
 
-export type RedisMessage<T extends GameEvent> = {
+export type RedisMessage<T extends InboundGameEvent> = {
   event: T;
   payload: GameEventPayload[T];
   timestamp: number;

@@ -1,14 +1,14 @@
-import { ChipUnit, GameStatus } from '@texas-holdem/shared-types';
+import { ChipUnit } from '@texas-holdem/shared-types';
 
 export type CreateGamePayload = {
-  maxPlayers: number;
+  maximumPlayers: number;
   blinds: number[];
   buyIn: number;
 };
 
 export type Blind = {
   id: number;
-  blindNumber: number;
+  sequence: number;
   amount: number;
 };
 
@@ -18,7 +18,6 @@ export type Game = {
   maximumPlayers: number;
   chipUnit: ChipUnit;
   rake: number;
-  status: GameStatus;
   createdAt: string;
   updatedAt: string;
   blinds: Blind[];
