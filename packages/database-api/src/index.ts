@@ -1,5 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { GameRepository, RoundRepository, UserRepository } from './repositories';
+import {
+  GameRepository,
+  RoundRepository,
+  PlayerRepository,
+  UserRepository,
+} from './repositories';
 
 export class DatabaseApi {
   private static instance: DatabaseApi;
@@ -12,11 +17,14 @@ export class DatabaseApi {
 
   public readonly round: RoundRepository;
 
+  public readonly player: PlayerRepository;
+
   private constructor() {
     this.client = new PrismaClient();
     this.user = new UserRepository(this.client);
     this.game = new GameRepository(this.client);
     this.round = new RoundRepository(this.client);
+    this.player = new PlayerRepository(this.client);
   }
 
   public static getInstance(): DatabaseApi {
@@ -30,3 +38,5 @@ export class DatabaseApi {
     await this.client.$disconnect();
   }
 }
+
+export const db = DatabaseApi.getInstance();

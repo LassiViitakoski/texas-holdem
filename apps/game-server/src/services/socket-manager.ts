@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import { GameManager } from '../game-manager';
+import { db } from '@texas-holdem/database-api';
+import { gm } from '../game-manager';
 
 export class SocketManager {
   private static instance: SocketManager;
@@ -27,16 +28,43 @@ export class SocketManager {
 
   private initialize() {
     this.io.on('connection', (socket) => {
-      socket.on('join-game', (gameId: number) => {
-        console.log('JOIN GAME ON GAME SERVER', gameId);
-        const game = GameManager.getInstance().getGame(gameId);
+      socket.on('join-game', async (data: { gameId: number, buyIn: number, userId: number }) => {
+        console.log('JOIN GAME ON GAME SERVER', data);
+        const game = gm.getGame(data.gameId);
         if (!game) return;
 
-        const sockets = this.gameRoomConnections.get(gameId) || new Set();
-        sockets.add(socket.id);
-        this.gameRoomConnections.set(gameId, sockets);
+        try {
+          // Create new player
+          const player = await db.player.create({
+            gameId: data.gameId,
+            stack: data.buyIn,
+            userId: data.userId,
+          });
 
-        console.log('Game Room Connections', this.gameRoomConnections);
+          // Add socket to game room
+          const sockets = this.gameRoomConnections.get(data.gameId) || new Set();
+          sockets.add(socket.id);
+          this.gameRoomConnections.set(data.gameId, sockets);
+
+          // Notify all players about new player
+          this.emitGameEvent(data.gameId, {
+            type: 'PLAYER_JOINED',
+            payload: {
+              playerId: player.id,
+              name: player.user.username,
+              stack: player.stack,
+            },
+          });
+
+          if (player.game.players.length >= player.game.minimumPlayers) {
+            this.emitGameEvent(data.gameId, {
+              type: 'ROUND_STARTS_SOON',
+            });
+          }
+        } catch (error) {
+          console.error('Failed to create player:', error);
+          socket.emit('error', 'Failed to join game');
+        }
       });
 
       socket.on('leave-game', (gameId: number) => {

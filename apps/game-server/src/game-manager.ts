@@ -69,3 +69,5 @@ export class GameManager {
     return this.games.filter((game) => game.activeRound);
   }
 }
+
+export const gm = GameManager.getInstance();

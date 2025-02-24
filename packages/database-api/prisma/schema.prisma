@@ -61,19 +61,6 @@ model Account {
   @@map("account")
 }
 
-model Card {
-  id              Int           @id @default(autoincrement())
-  suit            CardSuit
-  rank            CardRank
-
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
-  roundPlayers    RoundPlayer[]
-  roundCommunity  RoundCommunityCard[]
-
-  @@map("card")
-}
-
 model Game {
   id             Int             @id @default(autoincrement())
   minimumPlayers Int             @default(2) @map("minimum_players")
@@ -108,31 +95,17 @@ model Round {
   id              Int           @id @default(autoincrement())
   pot             Decimal
   isFinished      Boolean       @default(false) @map("is_finished")
+  communityCards  String[]      @map("community_cards") // Store as ["Ad", "10c", "Kh"]
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
 
   game            Game          @relation(fields: [gameId], references: [id])
   gameId          Int           @map("game_id")
 
-  roundPlayers   RoundPlayer[]
-  bettingRounds  BettingRound[]
-  communityCards  RoundCommunityCard[]
+  roundPlayers    RoundPlayer[]
+  bettingRounds   BettingRound[]
 
   @@map("round")
-}
-
-model RoundCommunityCard {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  round     Round    @relation(fields: [roundId], references: [id])
-  roundId   Int      @map("round_id")
-  
-  card      Card     @relation(fields: [cardId], references: [id])
-  cardId    Int      @map("card_id")
-
-  @@map("round_community_card")
 }
 
 model RoundPlayer {
@@ -140,6 +113,7 @@ model RoundPlayer {
   stack                   Decimal               @map("stack")
   isWinner                Boolean               @default(false) @map("is_winner")
   sequence                Int                   @map("sequence")
+  cards                   String[]              // Store as ["Ad", "10c"]
   createdAt               DateTime              @default(now()) @map("created_at")
   updatedAt               DateTime              @default(now()) @updatedAt @map("updated_at")
 
@@ -148,7 +122,6 @@ model RoundPlayer {
   playerId                Int                   @map("player_id")
   roundId                 Int                   @map("round_id")
 
-  cards                   Card[]
   bettingRounds           BettingRoundPlayer[]
 
   @@map("round_player")
@@ -249,31 +222,4 @@ enum BettingRoundPlayerActionType {
   RAISE
 
   @@map("BETTING_ROUND_PLAYER_ACTION")
-}
-
-enum CardSuit {
-  CLUB
-  DIAMOND
-  HEART
-  SPADE
-
-  @@map("CARD_SUIT")
-}
-
-enum CardRank {
-  TWO
-  THREE
-  FOUR
-  FIVE
-  SIX
-  SEVEN
-  EIGHT
-  NINE
-  TEN
-  JACK
-  QUEEN
-  KING
-  ACE
-
-  @@map("CARD_RANK")
 }
