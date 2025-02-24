@@ -36,10 +36,7 @@ export async function getGameHandler(
   reply: FastifyReply,
 ) {
   const { id } = request.params;
-
-  const game = null;// await db.game.findById(id);
-
-  console.log({ game });
+  const game = await db.game.getGame(id);
 
   if (!game) {
     return reply.code(404).send({ message: 'Game not found' });
@@ -52,7 +49,7 @@ export async function getAllGamesHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  const games = null;// await db.game.findAll();
+  const games = await db.game.findActiveGames();
   return reply.send(games);
 }
 

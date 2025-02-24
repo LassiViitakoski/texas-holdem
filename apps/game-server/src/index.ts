@@ -3,6 +3,7 @@ import { envConfig } from './config';
 import { Game } from './game';
 import { GameManager } from './game-manager';
 import { RedisMessage, InboundGameEvent } from './types/redis';
+import { SocketManager } from './services/socket-manager';
 
 (async () => {
   const gameManager = GameManager.getInstance();
@@ -15,8 +16,20 @@ import { RedisMessage, InboundGameEvent } from './types/redis';
     console.log('Game manager initialized with active games', JSON.stringify(gameManager.getAllGames()));
 
     const waitingGames = gameManager.getWaitingGames();
+    const socketManager = SocketManager.getInstance();
+
+    socketManager.emitGameEvent(1, {
+      type: 'ROUND_STARTED',
+      payload: {
+        roundNumber: 1,
+        smallBlind: 10,
+        bigBlind: 20,
+        dealer: 1,
+      },
+    });
 
     waitingGames.forEach((game) => {
+      return;
       if (game.isReadyToStart()) {
         game.startNewRound().then((round) => {
           console.log('New round successfully started with follwing data', JSON.stringify(round, null, 2));

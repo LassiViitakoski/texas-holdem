@@ -28,7 +28,6 @@ export const GameResponse = Type.Object({
   maximumPlayers: Type.Number(),
   chipUnit: ChipUnit,
   rake: Type.Number(),
-  status: GameStatus,
   createdAt: Type.String({ format: 'date-time' }),
   updatedAt: Type.String({ format: 'date-time' }),
   blinds: Type.Array(Type.Object({

@@ -56,6 +56,46 @@ export class GameRepository {
     });
   }
 
+  async getGame(id: number) {
+    const game = await this.client.game.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        minimumPlayers: true,
+        maximumPlayers: true,
+        chipUnit: true,
+        rake: true,
+        createdAt: true,
+        updatedAt: true,
+        blinds: {
+          select: {
+            id: true,
+            sequence: true,
+            amount: true,
+          },
+          orderBy: {
+            sequence: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!game) {
+      throw new Error('Game not found');
+    }
+
+    return {
+      ...game,
+      rake: game.rake.toNumber(),
+      blinds: game.blinds.map((blind) => ({
+        ...blind,
+        amount: blind.amount.toNumber(),
+      })),
+      createdAt: game.createdAt.toISOString(),
+      updatedAt: game.updatedAt.toISOString(),
+    };
+  }
+
   async clearRounds() {
     await this.client.bettingRoundPlayerAction.deleteMany();
     await this.client.bettingRoundPlayer.deleteMany();

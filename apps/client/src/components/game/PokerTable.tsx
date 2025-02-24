@@ -2,8 +2,15 @@ import { PlayerPosition } from '@/components/game/PlayerPosition';
 import { Chip } from '@/components/shared';
 import { Player } from '@/types';
 import { CommunityCards } from './CommunityCards';
+import { useGameSocket } from '@/hooks/useGameSocket';
+import { useParams } from '@tanstack/react-router';
+import { BetButton } from './BetButton';
 
 export const PokerTable = () => {
+  console.log('Poker Table Rendering')
+  const { gameId } = useParams({ from: '/games/$gameId' });
+  const gameIdNumeric = parseInt(gameId, 10);
+
   const players: Player[] = [
     { name: 'You', chips: 1000, cards: [{ suit: 'heart', value: 'A' }, { suit: 'spade', value: 'K' }] },
     { name: 'Player 2', chips: 1500 },
@@ -12,6 +19,8 @@ export const PokerTable = () => {
     { name: 'Player 5', chips: 1200 },
     { name: 'Player 6', chips: 900 },
   ];
+
+  const socket = useGameSocket(gameIdNumeric);
 
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
@@ -26,6 +35,8 @@ export const PokerTable = () => {
         </div>
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
           <CommunityCards />
+          <BetButton gameId={gameIdNumeric} amount={100} />
+          <button type="button" onClick={() => socket.joinGame()}>Sit on table</button>
         </div>
         {players.map((player, index) => (
           <PlayerPosition key={index} position={index} player={player} isDealer={index === 0} />

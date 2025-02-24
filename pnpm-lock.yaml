@@ -214,6 +214,9 @@ importers:
       ioredis:
         specifier: ^5.5.0
         version: 5.5.0
+      socket.io:
+        specifier: ^4.8.1
+        version: 4.8.1
       toad-scheduler:
         specifier: ^3.0.1
         version: 3.0.1
