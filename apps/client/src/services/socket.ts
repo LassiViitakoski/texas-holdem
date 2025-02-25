@@ -15,9 +15,13 @@ class SocketService {
     return this.instance;
   }
 
-  joinGame(gameId: number) {
-    console.log('JOIN GAME', gameId);
-    this.socket?.emit('join-game', gameId);
+  joinGame(payload: { gameId: number, buyIn: number, userId: number }) {
+    console.log('JOIN GAME', payload);
+    this.socket?.emit('join-game', {
+      gameId: payload.gameId,
+      buyIn: payload.buyIn,
+      userId: payload.userId,
+    });
   }
 
   leaveGame(gameId: number) {

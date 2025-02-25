@@ -36,7 +36,10 @@ export const PokerTable = () => {
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
           <CommunityCards />
           <BetButton gameId={gameIdNumeric} amount={100} />
-          <button type="button" onClick={() => socket.joinGame()}>Sit on table</button>
+          <button type="button" onClick={() => {
+            socket.onGameUpdate((event) => console.log('GAME UPDATE FROM SERVER', event));
+            socket.joinGame()
+          }}>Sit on table</button>
         </div>
         {players.map((player, index) => (
           <PlayerPosition key={index} position={index} player={player} isDealer={index === 0} />

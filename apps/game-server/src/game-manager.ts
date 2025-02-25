@@ -30,6 +30,8 @@ export class GameManager {
 
     const databaseApi = DatabaseApi.getInstance();
 
+    await databaseApi.game.clearRounds();
+
     const games = await databaseApi.game.findActiveGames();
 
     // TODO for later: figure out how to initialize game with active round ongoing.
@@ -37,8 +39,6 @@ export class GameManager {
       ...game,
       blinds: game.blinds.sort((a, b) => a.sequence - b.sequence),
     }));
-
-    await databaseApi.game.clearRounds();
 
     this.initialized = true;
   }

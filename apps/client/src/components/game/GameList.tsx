@@ -67,7 +67,7 @@ export const GameList = () => {
             <div className="mt-2 text-sm font-medium text-blue-600">
               Status:
               {' '}
-              {game.status}
+              Status
             </div>
           </Link>
         ))}

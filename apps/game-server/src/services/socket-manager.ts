@@ -41,6 +41,8 @@ export class SocketManager {
             userId: data.userId,
           });
 
+          game.join(player);
+
           // Add socket to game room
           const sockets = this.gameRoomConnections.get(data.gameId) || new Set();
           sockets.add(socket.id);
@@ -56,10 +58,23 @@ export class SocketManager {
             },
           });
 
-          if (player.game.players.length >= player.game.minimumPlayers) {
+          if (game.isReadyToStart()) {
             this.emitGameEvent(data.gameId, {
               type: 'ROUND_STARTS_SOON',
             });
+
+            setTimeout(() => {
+              game.startNewRound().then((round) => {
+                this.emitGameEvent(data.gameId, {
+                  type: 'ROUND_STARTED',
+                  payload: {
+                    id: round.id,
+                    players: round.players,
+                    pot: round.pot,
+                  },
+                });
+              });
+            }, 10000);
           }
         } catch (error) {
           console.error('Failed to create player:', error);

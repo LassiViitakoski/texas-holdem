@@ -1,8 +1,8 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import corsPlugin from './plugins/cors';
-import { healthRoutes } from './routes/health';
 import { gamesRoutes } from './routes/games';
+import { userRoutes } from './routes/users';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -24,8 +24,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(corsPlugin);
 
   // Register routes
-  await app.register(healthRoutes, { prefix: '/health' });
   await app.register(gamesRoutes, { prefix: '/games' });
+  await app.register(userRoutes, { prefix: '/users' });
 
   return app;
 }

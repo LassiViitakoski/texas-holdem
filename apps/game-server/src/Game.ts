@@ -2,7 +2,8 @@ import { DatabaseApi } from '@texas-holdem/database-api';
 import type {
   BettingRoundPlayerActionType,
   BettingRoundType,
-  Blind, Card, ChipUnit,
+  Blind,
+  ChipUnit,
   Game as GameType,
   Player,
   Round as RoundType,
@@ -45,8 +46,19 @@ export class Game implements GameType {
   }
 
   public isReadyToStart() {
-    return this.players.length >= this.minimumPlayers
+    console.log({
+      activeRound: !!this.activeRound,
+      playersLength: this.players.length,
+      minimumPlayers: this.minimumPlayers,
+      maximumPlayers: this.maximumPlayers,
+    });
+    return !this.activeRound
+      && this.players.length >= this.minimumPlayers
       && this.players.length <= this.maximumPlayers;
+  }
+
+  public join(player: Player) {
+    this.players.push(player);
   }
 
   public async startNewRound() {
@@ -55,9 +67,9 @@ export class Game implements GameType {
     }
 
     const db = DatabaseApi.getInstance();
-    const cards: Card[][] = [
-      [{ id: 12, rank: 'KING', suit: 'CLUB' }, { id: 13, rank: 'ACE', suit: 'CLUB' }],
-      [{ id: 38, rank: 'KING', suit: 'HEART' }, { id: 39, rank: 'ACE', suit: 'HEART' }],
+    const cards: string[][] = [
+      ['Kc', 'Ac'],
+      ['Kh', 'Ah'],
     ];
     const roundCreationData = await db.round.create({
       gameId: this.id,

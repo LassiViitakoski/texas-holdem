@@ -102,6 +102,7 @@ export class GameRepository {
     await this.client.bettingRound.deleteMany();
     await this.client.roundPlayer.deleteMany();
     await this.client.round.deleteMany();
+    await this.client.player.deleteMany();
     console.log('Rounds cleared');
   }
 }

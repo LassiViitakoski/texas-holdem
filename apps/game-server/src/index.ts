@@ -10,6 +10,8 @@ import { SocketManager } from './services/socket-manager';
   const redis = new Redis(envConfig.REDIS_URL);
 
   try {
+    // await db.resetDb();
+
     // Initialize game manager with active games
     await gameManager.initialize();
 
@@ -17,16 +19,6 @@ import { SocketManager } from './services/socket-manager';
 
     const waitingGames = gameManager.getWaitingGames();
     const socketManager = SocketManager.getInstance();
-
-    socketManager.emitGameEvent(1, {
-      type: 'ROUND_STARTED',
-      payload: {
-        roundNumber: 1,
-        smallBlind: 10,
-        bigBlind: 20,
-        dealer: 1,
-      },
-    });
 
     waitingGames.forEach((game) => {
       return;

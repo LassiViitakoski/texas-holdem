@@ -11,17 +11,17 @@
  * For now, keeping it simple with direct database access is sufficient.
  */
 
-import { FastifyReply, FastifyRequest } from 'fastify';
 import { DatabaseApi } from '@texas-holdem/database-api';
-import { CreateGameReqBody, GameParams } from '@/routes/games/schema';
+import { CreateGameReqBody, GameParams, GameResponse } from '@/routes/games/schema';
 import { publishGameEvent } from '../../services/redis';
+import { withErrorHandler } from '../../errors';
 
 const db = DatabaseApi.getInstance();
 
-export async function createGameHandler(
-  request: FastifyRequest<{ Body: typeof CreateGameReqBody }>,
-  reply: FastifyReply,
-) {
+export const createGameHandler = withErrorHandler<typeof GameResponse, typeof CreateGameReqBody>()(async (
+  request,
+  reply,
+) => {
   const { blinds, maximumPlayers /* buyIn */ } = request.body;
   const createdGame = await db.game.create({
     blinds,
@@ -29,12 +29,12 @@ export async function createGameHandler(
   });
   await publishGameEvent('game:created', JSON.stringify(createdGame));
   return reply.code(201).send(createdGame);
-}
+});
 
-export async function getGameHandler(
-  request: FastifyRequest<{ Params: typeof GameParams }>,
-  reply: FastifyReply,
-) {
+export const getGameHandler = withErrorHandler<typeof GameResponse, unknown, unknown, typeof GameParams>()(async (
+  request,
+  reply,
+) => {
   const { id } = request.params;
   const game = await db.game.getGame(id);
 
@@ -43,15 +43,15 @@ export async function getGameHandler(
   }
 
   return reply.send(game);
-}
+});
 
-export async function getAllGamesHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+export const getAllGamesHandler = withErrorHandler<typeof GameResponse[]>()(async (
+  request,
+  reply,
+) => {
   const games = await db.game.findActiveGames();
   return reply.send(games);
-}
+});
 
 export const gamesHandler = {
   create: createGameHandler,

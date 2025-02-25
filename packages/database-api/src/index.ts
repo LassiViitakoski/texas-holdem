@@ -37,6 +37,17 @@ export class DatabaseApi {
   public async disconnect(): Promise<void> {
     await this.client.$disconnect();
   }
+
+  public async resetDb(): Promise<void> {
+    await this.client.bettingRoundPlayerAction.deleteMany();
+    await this.client.bettingRoundPlayer.deleteMany();
+    await this.client.bettingRound.deleteMany();
+    await this.client.roundPlayer.deleteMany();
+    await this.client.round.deleteMany();
+    await this.client.player.deleteMany();
+    await this.client.blind.deleteMany();
+    await this.client.game.deleteMany();
+  }
 }
 
 export const db = DatabaseApi.getInstance();

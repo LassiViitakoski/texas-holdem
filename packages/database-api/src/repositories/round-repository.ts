@@ -7,7 +7,6 @@ export class RoundRepository {
   constructor(private client: PrismaClient) {}
 
   public async create(data: CreateRoundData) {
-    data.players.map((s) => s);
     return this.client.$transaction(async (tx) => {
       // 2. Create round with players
       const round = await tx.round.create({
@@ -24,9 +23,7 @@ export class RoundRepository {
               playerId,
               stack,
               sequence,
-              cards: {
-                connect: cards.map((card) => ({ id: card.id })),
-              },
+              cards,
             })),
           },
         },

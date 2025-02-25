@@ -28,12 +28,6 @@ export type CardRankMap = {
   ACE: [1, 14],
 }
 
-export type Card = {
-  id: number;
-  rank: CardRank;
-  suit: CardSuit;
-}
-
 export type Blind<T extends number | Decimal> = {
   id: number;
   sequence: number;
@@ -77,7 +71,7 @@ export type RoundPlayer<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSIST
   stack: Decimal;
   sequence: number;
   playerId: number;
-  cards: Card[];
+  cards: string[];
 };
 
 export type BettingRoundPlayer = {

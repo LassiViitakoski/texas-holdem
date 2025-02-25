@@ -6,4 +6,7 @@ module.exports = {
     'linebreak-style': 'off',
     'no-underscore-dangle': 'off',
     'import/extensions': 'off',
+    'max-classes-per-file': 'off',
+    '@typescript-eslint/no-useless-constructor': 'off',
+    'max-len': ['error', { 'code': 120 }],
 };
