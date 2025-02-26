@@ -1,7 +1,6 @@
 import { Redis } from 'ioredis';
 import { envConfig } from './config';
-import { Game } from './game';
-import { GameManager } from './game-manager';
+import { Game, GameManager } from './game';
 import { RedisMessage, InboundGameEvent } from './types/redis';
 import { SocketManager } from './services/socket-manager';
 

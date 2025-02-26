@@ -1,4 +1,4 @@
-import { Game } from '@/game';
+import { Game } from '@/game/game';
 
 export type InboundGameEvent = 'game:created' | 'game:started' | 'game:finished';
 

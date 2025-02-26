@@ -4,21 +4,20 @@ import type {
   BettingRoundType,
   Blind,
   ChipUnit,
-  Game as GameType,
-  Player,
-  Round as RoundType,
+  IGame,
+  IPlayer,
+  IRound,
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
+import {
+  BettingRound,
+  BettingRoundPlayer,
+  BettingRoundPlayerAction,
+  Round,
+} from './round';
+import { EventBus } from '../services/event-bus';
 
-import { Round } from './round';
-import { BettingRound } from './betting-round';
-import { BettingRoundPlayer } from './betting-round-player';
-import { BettingRoundPlayerAction } from './betting-round-player-action';
-import { EventBus } from './services/event-bus';
-
-type GameConstructorParams = GameType;
-
-export class Game implements GameType {
+export class Game implements IGame {
   public id: number;
 
   public blinds: Blind<Decimal>[];
@@ -31,11 +30,11 @@ export class Game implements GameType {
 
   public rake: Decimal;
 
-  public players: Player[];
+  public players: IPlayer[];
 
-  public activeRound?: RoundType;
+  public activeRound?: IRound;
 
-  constructor(params: GameConstructorParams) {
+  constructor(params: IGame) {
     this.id = params.id;
     this.blinds = params.blinds;
     this.maximumPlayers = params.maximumPlayers;
@@ -57,7 +56,7 @@ export class Game implements GameType {
       && this.players.length <= this.maximumPlayers;
   }
 
-  public join(player: Player) {
+  public join(player: IPlayer) {
     this.players.push(player);
   }
 

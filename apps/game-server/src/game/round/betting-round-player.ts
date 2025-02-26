@@ -1,13 +1,8 @@
 import { Decimal } from 'decimal.js';
-
-import type {
-  BettingRoundPlayer as BettingRoundPlayerType,
-} from '@texas-holdem/shared-types';
+import type { IBettingRoundPlayer } from '@texas-holdem/shared-types';
 import { BettingRoundPlayerAction } from './betting-round-player-action';
 
-type BettingRoundPlayerConstructorParams = BettingRoundPlayerType;
-
-export class BettingRoundPlayer implements BettingRoundPlayerType {
+export class BettingRoundPlayer implements IBettingRoundPlayer {
   public id: number;
 
   public stack: Decimal;
@@ -18,7 +13,7 @@ export class BettingRoundPlayer implements BettingRoundPlayerType {
 
   public actions: BettingRoundPlayerAction[];
 
-  constructor(params: BettingRoundPlayerConstructorParams) {
+  constructor(params: IBettingRoundPlayer) {
     this.id = params.id;
     this.stack = params.stack;
     this.sequence = params.sequence;

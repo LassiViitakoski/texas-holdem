@@ -1,13 +1,8 @@
-import type {
-  Round as RoundType,
-  RoundPlayer,
-} from '@texas-holdem/shared-types';
-import Decimal from 'decimal.js';
+import { Decimal } from 'decimal.js';
+import type { IRound, IRoundPlayer } from '@texas-holdem/shared-types';
 import { BettingRound } from './betting-round';
 
-type RoundConstructorParams = RoundType;
-
-export class Round implements RoundType {
+export class Round implements IRound {
   public id: number;
 
   public pot: Decimal;
@@ -16,9 +11,9 @@ export class Round implements RoundType {
 
   public bettingRounds: BettingRound[];
 
-  public players: RoundPlayer[];
+  public players: IRoundPlayer[];
 
-  constructor(params: RoundConstructorParams) {
+  constructor(params: IRound) {
     this.id = params.id;
     this.pot = params.pot;
     this.isFinished = params.isFinished;

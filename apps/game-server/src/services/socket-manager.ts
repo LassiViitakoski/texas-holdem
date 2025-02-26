@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { db } from '@texas-holdem/database-api';
-import { gm } from '../game-manager';
+import { gm } from '../game/game-manager';
 
 export class SocketManager {
   private static instance: SocketManager;

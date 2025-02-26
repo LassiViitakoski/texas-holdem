@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import type { Round, BettingRoundPlayerAction } from '@texas-holdem/shared-types';
+import type { IRound, IBettingRoundPlayerAction } from '@texas-holdem/shared-types';
 
-type CreateRoundData = Pick<Round<'UNPERSISTED'>, 'pot' | 'players'> & { gameId: number; actions: BettingRoundPlayerAction<'UNPERSISTED'>[] };
+type CreateRoundData = Pick<IRound<'UNPERSISTED'>, 'pot' | 'players'> & {
+  gameId: number;
+  actions: IBettingRoundPlayerAction<'UNPERSISTED'>[];
+};
 
 export class RoundRepository {
   constructor(private client: PrismaClient) {}
