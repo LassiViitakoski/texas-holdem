@@ -1,23 +1,29 @@
 import { DatabaseApi } from '@texas-holdem/database-api';
 import type {
-  BettingRoundPlayerActionType,
-  BettingRoundType,
   Blind,
   ChipUnit,
-  IGame,
-  IPlayer,
   IRound,
+  ITablePosition,
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
 import {
-  BettingRound,
-  BettingRoundPlayer,
-  BettingRoundPlayerAction,
   Round,
 } from './round';
 import { EventBus } from '../services/event-bus';
+import { Player } from './player';
 
-export class Game implements IGame {
+interface GameConstructorParams {
+  id: number;
+  blinds: Blind<Decimal>[];
+  maximumPlayers: number;
+  minimumPlayers: number;
+  chipUnit: ChipUnit;
+  rake: Decimal;
+  players: Player[];
+  tablePositions?: ITablePosition[];
+}
+
+export class Game {
   public id: number;
 
   public blinds: Blind<Decimal>[];
@@ -30,11 +36,13 @@ export class Game implements IGame {
 
   public rake: Decimal;
 
-  public players: IPlayer[];
+  public players: Player[];
 
   public activeRound?: IRound;
 
-  constructor(params: IGame) {
+  public tablePositions: ITablePosition[];
+
+  constructor(params: GameConstructorParams) {
     this.id = params.id;
     this.blinds = params.blinds;
     this.maximumPlayers = params.maximumPlayers;
@@ -42,6 +50,7 @@ export class Game implements IGame {
     this.chipUnit = params.chipUnit;
     this.rake = params.rake;
     this.players = params.players;
+    this.tablePositions = params.tablePositions || [];
   }
 
   public isReadyToStart() {
@@ -56,7 +65,7 @@ export class Game implements IGame {
       && this.players.length <= this.maximumPlayers;
   }
 
-  public join(player: IPlayer) {
+  public join(player: Player) {
     this.players.push(player);
   }
 
@@ -65,66 +74,84 @@ export class Game implements IGame {
       throw new Error('Round already started');
     }
 
-    const db = DatabaseApi.getInstance();
-    const cards: string[][] = [
-      ['Kc', 'Ac'],
-      ['Kh', 'Ah'],
-    ];
-    const roundCreationData = await db.round.create({
-      gameId: this.id,
-      pot: this.blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
-      players: this.players.map((player, index) => ({
-        id: undefined,
-        playerId: player.id,
-        stack: player.stack,
-        sequence: index + 1,
-        cards: cards[index],
-      })),
-      actions: this.blinds.map((blind, index) => ({
-        id: undefined,
-        sequence: index + 1,
-        type: 'BLIND',
-        amount: blind.amount,
-        bettingRoundPlayerId: undefined,
-      })),
-    });
+    /*
+    // 1. Find current dealer position
+    const currentDealer = this.tablePositions.find((pos) => pos.isDealer);
 
-    this.activeRound = new Round({
-      id: roundCreationData.id,
-      pot: roundCreationData.pot,
-      isFinished: roundCreationData.isFinished,
-      bettingRounds: roundCreationData.bettingRounds.map((br) => new BettingRound({
-        id: br.id,
-        type: br.type as BettingRoundType,
-        isFinished: br.isFinished,
-        players: br.players.map((brp) => new BettingRoundPlayer({
-          id: brp.id,
-          stack: brp.stack,
-          sequence: brp.sequence,
-          roundPlayerId: brp.roundPlayerId,
-          actions: brp.actions.map((action) => new BettingRoundPlayerAction({
-            id: action.id,
-            sequence: action.sequence,
-            type: action.type as BettingRoundPlayerActionType,
-            amount: action.amount,
-            bettingRoundPlayerId: action.bettingRoundPlayerId,
-          })),
-        })),
-      })),
-      players: roundCreationData.roundPlayers.map((rp) => ({
-        id: rp.id,
-        stack: rp.stack,
-        playerId: rp.playerId,
-        sequence: rp.sequence,
-        cards: cards[rp.sequence - 1],
-      })),
-    });
+    // 2. Calculate new dealer position
+    const nextDealerPosition = this.getNextActivePosition(currentDealer.position);
+
+    // 3. Create round players with correct sequences
+    const roundPlayers = this.calculateRoundPositions(nextDealerPosition);
+
+    // 4. Start the round with the calculated positions
+    return this.createRound(roundPlayers);
+    */
+
+    /*
+    // 1. Find dealer position
+    const dealerPosition = this.tablePositions.find(pos => pos.isDealer);
+
+    // 2. Create round players with sequences based on dealer
+    const roundPlayers = this.getActivePlayers().map((player, index) => ({
+      playerId: player.id,
+      // Sequence starts from small blind (dealer + 1)
+      sequence: this.calculateSequence(player.tablePosition.position, dealerPosition.position),
+      stack: player.stack,
+      cards: [],
+    }));
+
+    // 3. Create the round
+    const round = await this.createRound(roundPlayers);
+    return round;
+    */
+
+    this.activeRound = await Round.create(this.id, this.players, this.blinds);
 
     await EventBus.getInstance().publish(this.id, {
       type: 'round:started',
-      payload: { roundId: this.activeRound.id },
+      payload: { roundId: this.activeRound!.id },
     });
 
     return this.activeRound as Round;
   }
+
+  /*
+  private calculateRoundPositions(dealerPosition: number): IRoundPlayer[] {
+    const players: IRoundPlayer[] = [];
+    let sequence = 1;
+
+    // Small blind is first to act preflop
+    const smallBlindPos = this.getNextActivePosition(dealerPosition);
+    const bigBlindPos = this.getNextActivePosition(smallBlindPos);
+
+    // Order: SB, BB, UTG, ... , Dealer
+    let currentPos = smallBlindPos;
+    do {
+      const tablePosition = this.tablePositions.find((p) => p.position === currentPos);
+      if (tablePosition && tablePosition.isActive) {
+        players.push({
+          sequence: sequence++,
+          position: this.getPositionName(currentPos, dealerPosition),
+          playerId: tablePosition.playerId,
+          // ... other fields
+        });
+      }
+      currentPos = this.getNextActivePosition(currentPos);
+    } while (currentPos !== smallBlindPos);
+
+    return players;
+  }
+  */
+
+  /*
+  private calculateSequence(playerPosition: number, dealerPosition: number): number {
+    // Calculate sequence based on position relative to dealer
+    // Small blind (dealer + 1) gets sequence 1
+    // Big blind (dealer + 2) gets sequence 2
+    // And so on...
+    const relativePosition = (playerPosition - dealerPosition - 1 + 9) % 9;
+    return relativePosition + 1;
+  }
+  */
 }

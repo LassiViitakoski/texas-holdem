@@ -1,9 +1,9 @@
-import type { CardSuit, CardRank } from '@texas-holdem/shared-types';
+import type { CardSuit, CardRank, IDeck } from '@texas-holdem/shared-types';
 
 import { Card } from './card';
 
-export class Deck {
-  private cards: Card[];
+export class Deck implements IDeck {
+  public cards: Card[];
 
   private static readonly ranks: CardRank[] = ['2', '3', '4', '5', '6', '7', '9', '10', 'J', 'Q', 'K', 'A'];
 
@@ -25,9 +25,17 @@ export class Deck {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
+
+    return this;
   }
 
   public draw() {
-    return this.cards.pop();
+    const card = this.cards.pop();
+
+    if (!card) {
+      throw new Error('Deck is empty');
+    }
+
+    return card;
   }
 }

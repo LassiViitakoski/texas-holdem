@@ -1,9 +1,14 @@
 import { PrismaClient } from '@prisma/client';
-import type { IRound, IBettingRoundPlayerAction } from '@texas-holdem/shared-types';
+import { Decimal } from '@prisma/client/runtime/library';
+import type {
+  IBettingRoundPlayerAction, Optional, IRoundPlayer,
+} from '@texas-holdem/shared-types';
 
-type CreateRoundData = Pick<IRound<'UNPERSISTED'>, 'pot' | 'players'> & {
+type CreateRoundData = {
+  pot: Decimal;
+  players: (Pick<IRoundPlayer, 'stack' | 'playerId'> & { cards: string[] })[];
   gameId: number;
-  actions: IBettingRoundPlayerAction<'UNPERSISTED'>[];
+  actions: Optional<IBettingRoundPlayerAction, 'id' | 'bettingRoundPlayerId'>[];
 };
 
 export class RoundRepository {
@@ -19,18 +24,28 @@ export class RoundRepository {
           roundPlayers: {
             create: data.players.map(({
               stack,
-              sequence,
               cards,
               playerId,
             }) => ({
               playerId,
               stack,
-              sequence,
               cards,
             })),
           },
         },
-        include: { roundPlayers: true },
+        select: {
+          id: true,
+          pot: true,
+          isFinished: true,
+          roundPlayers: {
+            select: {
+              id: true,
+              stack: true,
+              playerId: true,
+              cards: true,
+            },
+          },
+        },
       });
 
       // 4. Create betting round players in bulk
@@ -42,7 +57,7 @@ export class RoundRepository {
             create: round.roundPlayers.map((roundPlayer, index) => ({
               roundPlayer: { connect: { id: roundPlayer.id } },
               stack: roundPlayer.stack,
-              sequence: roundPlayer.sequence,
+              sequence: index + 1,
               actions: data.actions[index] ? {
                 create: {
                   sequence: data.actions[index].sequence,
@@ -55,12 +70,33 @@ export class RoundRepository {
             })),
           },
         },
-        include: { players: { include: { actions: true } } },
+        select: {
+          id: true,
+          type: true,
+          isFinished: true,
+          players: {
+            select: {
+              id: true,
+              stack: true,
+              sequence: true,
+              roundPlayerId: true,
+              actions: {
+                select: {
+                  id: true,
+                  sequence: true,
+                  type: true,
+                  amount: true,
+                  bettingRoundPlayerId: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       return {
         ...round,
-        bettingRounds: [firstBettingRound],
+        firstBettingRound,
       };
     });
   }

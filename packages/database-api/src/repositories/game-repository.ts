@@ -52,6 +52,7 @@ export class GameRepository {
         },
         blinds: true,
         players: true,
+        tablePositions: true,
       },
     });
   }

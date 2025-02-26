@@ -1,5 +1,6 @@
 import { DatabaseApi } from '@texas-holdem/database-api';
 import { Game } from './game';
+import { Player } from './player';
 
 export class GameManager {
   private static instance: GameManager;
@@ -30,13 +31,16 @@ export class GameManager {
 
     const databaseApi = DatabaseApi.getInstance();
 
-    await databaseApi.game.clearRounds();
-
     const games = await databaseApi.game.findActiveGames();
 
     // TODO for later: figure out how to initialize game with active round ongoing.
     this.games = games.map((game) => new Game({
       ...game,
+      players: game.players.map((player) => new Player({
+        id: player.id,
+        userId: player.userId,
+        stack: player.stack,
+      })),
       blinds: game.blinds.sort((a, b) => a.sequence - b.sequence),
     }));
 

@@ -44,6 +44,7 @@ model Player {
   gameId    Int           @map("game_id")
   
   rounds    RoundPlayer[]
+  tablePosition TablePosition[]
 
   @@map("player")
 }
@@ -75,6 +76,7 @@ model Game {
   blinds         Blind[]
   players        Player[]
   rounds         Round[]
+  tablePositions TablePosition[]
 
   @@map("game")
 }
@@ -112,7 +114,6 @@ model RoundPlayer {
   id                      Int                   @id @default(autoincrement())
   stack                   Decimal               @map("stack")
   isWinner                Boolean               @default(false) @map("is_winner")
-  sequence                Int                   @map("sequence")
   cards                   String[]              // Store as ["Ad", "10c"]
   createdAt               DateTime              @default(now()) @map("created_at")
   updatedAt               DateTime              @default(now()) @updatedAt @map("updated_at")
@@ -174,6 +175,24 @@ model BettingRoundPlayerAction {
   @@map("betting_round_player_action")
 }
 
+model TablePosition {
+  id        Int      @id @default(autoincrement())
+  position  Int      // 1-based position number
+  isActive  Boolean  @default(false)
+  isDealer  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  game      Game     @relation(fields: [gameId], references: [id])
+  gameId    Int      @map("game_id")
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int      @map("player_id")
+
+  @@unique([gameId, position])  // Ensure no duplicate positions at same table
+  @@unique([gameId, playerId])  // Ensure player can't sit in multiple positions
+  @@map("table_position")
+}
+
 enum Currency {
   EUR
   SEK
@@ -183,7 +202,7 @@ enum Currency {
   @@map("CURRENCY")
 }
 
-enum UserRole {
+enum UserRole {s
   BASIC
   ADMIN
 

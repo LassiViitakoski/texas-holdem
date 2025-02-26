@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import { db } from '@texas-holdem/database-api';
 import { envConfig } from './config';
 import { Game, GameManager } from './game';
 import { RedisMessage, InboundGameEvent } from './types/redis';
@@ -12,23 +13,14 @@ import { SocketManager } from './services/socket-manager';
     // await db.resetDb();
 
     // Initialize game manager with active games
+    await db.game.clearRounds();
     await gameManager.initialize();
+
+    // const waitingGames = gameManager.getWaitingGames();
 
     console.log('Game manager initialized with active games', JSON.stringify(gameManager.getAllGames()));
 
-    const waitingGames = gameManager.getWaitingGames();
-    const socketManager = SocketManager.getInstance();
-
-    waitingGames.forEach((game) => {
-      return;
-      if (game.isReadyToStart()) {
-        game.startNewRound().then((round) => {
-          console.log('New round successfully started with follwing data', JSON.stringify(round, null, 2));
-
-          // Publish messages to REST API to notify clients of new round
-        });
-      }
-    });
+    SocketManager.getInstance();
 
     redis.subscribe('game-events-api-server', (err, result) => {
       if (err) {
@@ -43,9 +35,9 @@ import { SocketManager } from './services/socket-manager';
       console.log('Message received:', message);
 
       if (event === 'game:created') {
-        gameManager.addGame(
+        /* gameManager.addGame(
           new Game(payload as RedisMessage<'game:created'>['payload']),
-        );
+        ); */
 
         console.log('Game added to game manager', JSON.stringify(gameManager.getAllGames()));
       }
