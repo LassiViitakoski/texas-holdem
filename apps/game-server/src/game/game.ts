@@ -11,6 +11,7 @@ import {
 } from './round';
 import { EventBus } from '../services/event-bus';
 import { Player } from './player';
+import { socketManager } from '../services/socket-manager';
 
 interface GameConstructorParams {
   id: number;
@@ -107,12 +108,6 @@ export class Game {
     */
 
     this.activeRound = await Round.create(this.id, this.players, this.blinds);
-
-    await EventBus.getInstance().publish(this.id, {
-      type: 'round:started',
-      payload: { roundId: this.activeRound!.id },
-    });
-
     return this.activeRound as Round;
   }
 

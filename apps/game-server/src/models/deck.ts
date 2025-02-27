@@ -11,6 +11,7 @@ export class Deck implements IDeck {
 
   constructor() {
     this.cards = [];
+    this.initialize();
   }
 
   initialize() {

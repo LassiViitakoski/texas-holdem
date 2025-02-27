@@ -66,18 +66,17 @@ export class Round implements IRound {
       })),
     });
 
-    // Create and return new Round instance
+    const mappedRoundPlayers = roundPlayers.map((roundPlayer) => ({
+      ...roundPlayer,
+      cards: roundPlayer.cards.map((card) => Card.fromString(card)),
+    }));
+
     return new Round({
       ...roundProps,
-      players: roundPlayers.map((roundPlayer) => ({
-        ...roundPlayer,
-        cards: roundPlayer.cards.map((card) => Card.fromString(card)),
-      })),
-      bettingRounds: [bettingRound],
       deck,
+      players: mappedRoundPlayers,
+      bettingRounds: [bettingRound],
     });
-
-    // return Round.fromData(roundData);
   }
 
   constructor(params: RoundConstructorParams) {
@@ -89,7 +88,7 @@ export class Round implements IRound {
     this.deck = params.deck;
   }
 
-  public getNextToAct(): IRoundPlayer {
+  public getNextToAct(): IRoundPlayer | undefined {
     return this.players
       .sort((a, b) => a.sequence - b.sequence)
       .find((p) => !p.hasActed);

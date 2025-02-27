@@ -37,7 +37,9 @@ export const PokerTable = () => {
           <CommunityCards />
           <BetButton gameId={gameIdNumeric} amount={100} />
           <button type="button" onClick={() => {
-            socket.onGameUpdate((event) => console.log('GAME UPDATE FROM SERVER', event));
+            socket.onGameUpdate((event) => {
+              console.log(`GAME UPDATE {${event.type}} FROM SERVER`, event.payload);
+            });
             socket.joinGame()
           }}>Sit on table</button>
         </div>
