@@ -1,6 +1,24 @@
 import { DatabaseApi } from '@texas-holdem/database-api';
+import { z } from 'zod';
 import { Game } from './game';
 import { Player } from './player';
+import type { InboundSocketEventDefinition } from '../types';
+
+const schemas = {
+  joinGame: z.object({
+    gameId: z.number(),
+    buyIn: z.number(),
+    userId: z.number(),
+  }),
+  leaveGame: z.object({
+    gameId: z.number(),
+  }),
+};
+
+type GameEventListeners = {
+  'join-game': InboundSocketEventDefinition<typeof schemas.joinGame>;
+  'leave-game': InboundSocketEventDefinition<typeof schemas.leaveGame>;
+};
 
 export class GameManager {
   private static instance: GameManager;
@@ -9,8 +27,13 @@ export class GameManager {
 
   private initialized: boolean = false;
 
+  public gameEventListeners: GameEventListeners;
+
   private constructor() {
-    // Initialize any other necessary properties
+    this.gameEventListeners = {
+      'join-game': { handler: this.handleJoinGame.bind(this), schema: schemas.joinGame },
+      'leave-game': { handler: this.handleLeaveGame.bind(this), schema: schemas.leaveGame },
+    };
   }
 
   public static getInstance(): GameManager {
@@ -47,6 +70,18 @@ export class GameManager {
     this.initialized = true;
   }
 
+  public handleJoinGame(socketId: string, payload: z.infer<typeof schemas.joinGame>) {
+    const { gameId, buyIn, userId } = payload;
+  }
+
+  public handleLeaveGame(socketId: string, payload: z.infer<typeof schemas.leaveGame>) {
+    const { gameId } = payload;
+  }
+
+  public handlePlaceBet(socketId: string, payload: unknown) {
+
+  }
+
   public addGame(game: Game): void {
     // TODO: Could be validated that game does not already exist
 
@@ -74,4 +109,4 @@ export class GameManager {
   }
 }
 
-export const gm = GameManager.getInstance();
+export const gameManager = GameManager.getInstance();

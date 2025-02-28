@@ -1,13 +1,14 @@
 import { Redis } from 'ioredis';
 import { db } from '@texas-holdem/database-api';
 import { envConfig } from './config';
-import { Game, GameManager } from './game';
+import { gameManager } from './game';
 import { RedisMessage, InboundGameEvent } from './types/redis';
-import { SocketManager } from './services/socket-manager';
+import { socketManager } from './services/socket-manager';
 
 (async () => {
-  const gameManager = GameManager.getInstance();
   const redis = new Redis(envConfig.REDIS_URL);
+
+  socketManager.initializeClientListeners(gameManager.gameEventListeners);
 
   try {
     // await db.resetDb();
@@ -19,8 +20,6 @@ import { SocketManager } from './services/socket-manager';
     // const waitingGames = gameManager.getWaitingGames();
 
     console.log('Game manager initialized with active games', JSON.stringify(gameManager.getAllGames()));
-
-    SocketManager.getInstance();
 
     redis.subscribe('game-events-api-server', (err, result) => {
       if (err) {
