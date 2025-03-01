@@ -133,27 +133,7 @@ export class GameManager {
       return;
     }
 
-    game.startNewRound().then((round) => {
-      round.players.forEach((roundPlayer) => {
-        const roundPlayerUserId = game.players.find((p) => p.id === roundPlayer.playerId)?.userId;
-
-        if (!roundPlayerUserId) {
-          throw new Error('User not found on {handleGameJoin()}');
-        }
-
-        socketManager.emitUserEvent(
-          game.id,
-          roundPlayerUserId,
-          {
-            type: 'ROUND_STARTED',
-            payload: {
-              roundId: round.id,
-              cards: roundPlayer.cards,
-            },
-          },
-        );
-      });
-    });
+    await game.startNewRound();
   }
 
   public handleGameLeave(_: string, payload: z.infer<typeof schemas.leaveGame>) {
