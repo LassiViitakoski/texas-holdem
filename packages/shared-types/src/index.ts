@@ -68,6 +68,7 @@ export type IBettingRound = {
 export type IPlayer = {
   id: number;
   userId: number;
+  username: string;
   stack: Decimal;
 };
 

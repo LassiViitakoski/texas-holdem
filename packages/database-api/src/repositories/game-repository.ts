@@ -19,10 +19,24 @@ export class GameRepository {
             amount,
           })),
         },
+        tablePositions: {
+          create: Array.from({ length: data.maximumPlayers }).map((_, index) => ({
+            position: index + 1,
+          })),
+        },
       },
       include: {
+        tablePositions: true,
         blinds: true,
-        players: true,
+        players: {
+          include: {
+            user: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -32,27 +46,80 @@ export class GameRepository {
       where: {
         isInactive: false,
       },
-      include: {
+      select: {
+        id: true,
+        minimumPlayers: true,
+        maximumPlayers: true,
+        chipUnit: true,
+        rake: true,
+        blinds: {
+          select: {
+            id: true,
+            sequence: true,
+            amount: true,
+          },
+        },
+        players: {
+          select: {
+            id: true,
+            stack: true,
+            userId: true,
+            user: {
+              select: {
+                username: true,
+              },
+            },
+          },
+
+        },
         rounds: {
           where: {
             isFinished: false,
           },
-          include: {
-            roundPlayers: true,
+          select: {
+            roundPlayers: {
+              select: {
+                id: true,
+                stack: true,
+                cards: true,
+                playerId: true,
+              },
+            },
             bettingRounds: {
-              include: {
+              select: {
+                id: true,
+                type: true,
+                isFinished: true,
                 players: {
-                  include: {
-                    actions: true,
+                  select: {
+                    id: true,
+                    stack: true,
+                    sequence: true,
+                    roundPlayerId: true,
+                    actions: {
+                      select: {
+                        id: true,
+                        type: true,
+                        sequence: true,
+                        amount: true,
+                        bettingRoundPlayerId: true,
+                      },
+                    },
                   },
                 },
               },
             },
           },
         },
-        blinds: true,
-        players: true,
-        tablePositions: true,
+        tablePositions: {
+          select: {
+            id: true,
+            position: true,
+            isActive: true,
+            isDealer: true,
+            playerId: true,
+          },
+        },
       },
     });
   }
@@ -85,16 +152,7 @@ export class GameRepository {
       throw new Error('Game not found');
     }
 
-    return {
-      ...game,
-      rake: game.rake.toNumber(),
-      blinds: game.blinds.map((blind) => ({
-        ...blind,
-        amount: blind.amount.toNumber(),
-      })),
-      createdAt: game.createdAt.toISOString(),
-      updatedAt: game.updatedAt.toISOString(),
-    };
+    return game;
   }
 
   async clearRounds() {

@@ -2,9 +2,9 @@ import { Redis } from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL as string);
 
-export const publishGameEvent = async (event: string, payload: unknown) => {
+export const publishEvent = async (event: string, payload: unknown) => {
   console.info('Publishing game event', { event, payload });
-  await redis.publish('game-events-api-server', JSON.stringify({
+  await redis.publish('api-channel', JSON.stringify({
     event,
     payload,
     timestamp: Date.now(),

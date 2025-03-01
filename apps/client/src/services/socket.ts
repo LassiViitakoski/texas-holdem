@@ -17,7 +17,7 @@ class SocketService {
 
   joinGame(payload: { gameId: number, buyIn: number, userId: number }) {
     console.log('JOIN GAME', payload);
-    this.socket.emit('join-game', {
+    this.socket.emit('GAME_JOIN', {
       gameId: payload.gameId,
       buyIn: payload.buyIn,
       userId: payload.userId,

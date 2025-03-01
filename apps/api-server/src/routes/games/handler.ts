@@ -13,7 +13,7 @@
 
 import { DatabaseApi } from '@texas-holdem/database-api';
 import { CreateGameReqBody, GameParams, GameResponse } from '@/routes/games/schema';
-import { publishGameEvent } from '../../services/redis';
+import { publishEvent } from '../../services/redis';
 import { withErrorHandler } from '../../errors';
 
 const db = DatabaseApi.getInstance();
@@ -27,7 +27,7 @@ export const createGameHandler = withErrorHandler<typeof GameResponse, typeof Cr
     blinds,
     maximumPlayers,
   });
-  await publishGameEvent('game:created', JSON.stringify(createdGame));
+  await publishEvent('GAME_CREATED', JSON.stringify(createdGame));
   return reply.code(201).send(createdGame);
 });
 

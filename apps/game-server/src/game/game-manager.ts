@@ -1,8 +1,9 @@
-import { DatabaseApi } from '@texas-holdem/database-api';
+import { db } from '@texas-holdem/database-api';
 import { z } from 'zod';
 import { Game } from './game';
 import { Player } from './player';
-import type { InboundSocketEventDefinition } from '../types';
+import type { EventHandlerMap } from '../types';
+import { socketManager } from '../services/socket-manager';
 
 const schemas = {
   joinGame: z.object({
@@ -12,12 +13,12 @@ const schemas = {
   }),
   leaveGame: z.object({
     gameId: z.number(),
+    userId: z.number(),
   }),
 };
 
-type GameEventListeners = {
-  'join-game': InboundSocketEventDefinition<typeof schemas.joinGame>;
-  'leave-game': InboundSocketEventDefinition<typeof schemas.leaveGame>;
+export type MessageBrokerGameEvents = {
+  GAME_CREATED: Awaited<ReturnType<typeof db.game.create>>;
 };
 
 export class GameManager {
@@ -27,14 +28,26 @@ export class GameManager {
 
   private initialized: boolean = false;
 
-  public gameEventListeners: GameEventListeners;
+  /**
+   * @description Socket events with Zod validation schemas for runtime type checking of browser messages
+   */
+  public readonly socketEvents = {
+    GAME_JOIN: {
+      schema: schemas.joinGame,
+      handler: this.handleGameJoin.bind(this),
+    },
+    GAME_LEAVE: {
+      schema: schemas.leaveGame,
+      handler: this.handleGameLeave.bind(this),
+    },
+  } as const;
 
-  private constructor() {
-    this.gameEventListeners = {
-      'join-game': { handler: this.handleJoinGame.bind(this), schema: schemas.joinGame },
-      'leave-game': { handler: this.handleLeaveGame.bind(this), schema: schemas.leaveGame },
-    };
-  }
+  /**
+   * @description Message broker event handlers for server-to-server communication
+   */
+  public readonly messageBrokerEvents: EventHandlerMap<MessageBrokerGameEvents> = {
+    GAME_CREATED: this.handleGameCreated.bind(this),
+  } as const;
 
   public static getInstance(): GameManager {
     if (!GameManager.instance) {
@@ -52,34 +65,106 @@ export class GameManager {
       return;
     }
 
-    const databaseApi = DatabaseApi.getInstance();
-
-    const games = await databaseApi.game.findActiveGames();
+    const games = await db.game.findActiveGames();
 
     // TODO for later: figure out how to initialize game with active round ongoing.
-    this.games = games.map((game) => new Game({
-      ...game,
-      players: game.players.map((player) => new Player({
-        id: player.id,
-        userId: player.userId,
-        stack: player.stack,
-      })),
-      blinds: game.blinds.sort((a, b) => a.sequence - b.sequence),
+    this.games = games.map(({
+      blinds,
+      players,
+      rounds,
+      tablePositions,
+      ...gameDetails
+    }) => new Game({
+      ...gameDetails,
+      players: players.map(({ user, ...player }) => new Player({ ...player, username: user.username })),
+      blinds: blinds.sort((a, b) => a.sequence - b.sequence),
     }));
 
     this.initialized = true;
   }
 
-  public handleJoinGame(socketId: string, payload: z.infer<typeof schemas.joinGame>) {
+  public handleGameCreated(payload: Awaited<ReturnType<typeof db.game.create>>) {
+    console.log('Handle game created', payload);
+  }
+
+  public async handleGameJoin(socketId: string, payload: z.infer<typeof schemas.joinGame>) {
     const { gameId, buyIn, userId } = payload;
+
+    const game = this.getGame(gameId);
+
+    if (!game) {
+      throw new Error('Game not found on {handleGameJoin()}');
+    }
+
+    const { user, ...playerDetails } = await db.player.create({
+      gameId,
+      stack: buyIn,
+      userId,
+    });
+
+    const player = new Player({
+      ...playerDetails,
+      username: user.username,
+    });
+
+    game.join(player);
+    socketManager.addUserToGameRoom(gameId, userId, socketId);
+    socketManager.emitGameEvent(gameId, {
+      type: 'PLAYER_JOINED',
+      payload: {
+        playerId: player.id,
+        name: user.username,
+        stack: playerDetails.stack,
+      },
+    });
+
+    if (game.activeRound) {
+      return;
+    }
+
+    if (!game.isReadyToStart()) {
+      socketManager.emitGameEvent(gameId, {
+        type: 'NOT_READY_TO_START',
+        payload: {
+          gameId,
+          reason: 'WAITING_FOR_PLAYERS',
+        },
+      });
+      return;
+    }
+
+    game.startNewRound().then((round) => {
+      round.players.forEach((roundPlayer) => {
+        const roundPlayerUserId = game.players.find((p) => p.id === roundPlayer.playerId)?.userId;
+
+        if (!roundPlayerUserId) {
+          throw new Error('User not found on {handleGameJoin()}');
+        }
+
+        socketManager.emitUserEvent(
+          game.id,
+          roundPlayerUserId,
+          {
+            type: 'ROUND_STARTED',
+            payload: {
+              roundId: round.id,
+              cards: roundPlayer.cards,
+            },
+          },
+        );
+      });
+    });
   }
 
-  public handleLeaveGame(socketId: string, payload: z.infer<typeof schemas.leaveGame>) {
-    const { gameId } = payload;
-  }
+  public handleGameLeave(_: string, payload: z.infer<typeof schemas.leaveGame>) {
+    const { gameId, userId } = payload;
+    const activeGame = this.getGame(gameId);
 
-  public handlePlaceBet(socketId: string, payload: unknown) {
+    if (!activeGame) {
+      throw new Error('Game not found on {handleGameLeave()}');
+    }
 
+    socketManager.removeUserFromGameRoom(gameId, userId);
   }
 
   public addGame(game: Game): void {

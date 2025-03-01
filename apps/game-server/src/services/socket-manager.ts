@@ -1,9 +1,19 @@
 import { Server, Socket } from 'socket.io';
 import { createServer } from 'http';
-import { db } from '@texas-holdem/database-api';
-import { gameManager } from '../game';
-import { Player } from '../game/player';
-import type { InboundSocketEventDefinition } from '../types';
+import { z } from 'zod';
+
+// Base type for event definitions
+export type BaseSocketEvent = Record<string, {
+  schema: z.ZodType;
+  handler: (socketId: string, payload: any) => void;
+}>;
+
+export type InferSocketEvent<T extends BaseSocketEvent> = {
+  [K in keyof T]: {
+    schema: T[K]['schema'];
+    handler: (socketId: string, payload: z.infer<T[K]['schema']>) => void;
+  }
+};
 
 export class SocketManager {
   private static instance: SocketManager;
@@ -12,7 +22,7 @@ export class SocketManager {
 
   private httpServer: ReturnType<typeof createServer>;
 
-  private gameRoomConnections: Map<number, { playerId: number; socketId: string }[]> = new Map();
+  private gameRoomConnections: Map<number, { userId: number; socketId: string }[]> = new Map();
 
   private constructor(port: number) {
     this.httpServer = createServer();
@@ -28,10 +38,14 @@ export class SocketManager {
     return this.instance;
   }
 
-  public initializeClientListeners<T extends Record<string, InboundSocketEventDefinition>>(listeners: T) {
+  public initializeClientListeners<T extends BaseSocketEvent>(listeners: InferSocketEvent<T>) {
     this.io.on('connection', (socket: Socket) => {
-      Object.entries(listeners).forEach(([event, { handler, schema }]) => {
-        socket.on(event, (payload: unknown) => {
+      (Object.keys(listeners) as (keyof T)[]).forEach((event) => {
+        const { handler, schema } = listeners[event];
+
+        socket.on(event as string, (payload: unknown) => {
+          console.log('Socket.IO Event', event, payload);
+
           const parsedSchema = schema.safeParse(payload);
 
           if (parsedSchema.success) {
@@ -46,101 +60,6 @@ export class SocketManager {
     });
   }
 
-  private registerEventHandlers(socket: Socket) {
-    socket.on('join-game', (data: { gameId: number, buyIn: number, userId: number }) => this.handleJoinGame(socket, data));
-    socket.on('leave-game', (gameId: number) => this.handleLeaveGame(socket, gameId));
-    socket.on('place-bet', (gameId: number, amount: number) => this.handlePlaceBet(gameId, amount));
-  }
-
-  public addGameRoomConnection() {
-
-  }
-
-  private async handleJoinGame(socket: Socket, data: { gameId: number, buyIn: number, userId: number }) {
-    console.log('JOIN GAME ON GAME SERVER', data);
-    const game = gameManager.getGame(data.gameId);
-    if (!game) return;
-
-    try {
-      const player = await db.player.create({
-        gameId: data.gameId,
-        stack: data.buyIn,
-        userId: data.userId,
-      });
-
-      game.join(new Player(player));
-
-      const sockets = this.gameRoomConnections.get(data.gameId) || [];
-      const existingSocket = sockets.findIndex((s) => s.playerId === player.id);
-
-      if (existingSocket === -1) {
-        sockets.push({ playerId: player.id, socketId: socket.id });
-      } else {
-        sockets[existingSocket].socketId = socket.id;
-      }
-
-      this.gameRoomConnections.set(data.gameId, sockets);
-
-      this.emitGameEvent(data.gameId, {
-        type: 'PLAYER_JOINED',
-        payload: {
-          playerId: player.id,
-          name: player.user.username,
-          stack: player.stack,
-        },
-      });
-
-      if (game.isReadyToStart()) {
-        this.emitGameEvent(data.gameId, {
-          type: 'ROUND_STARTS_SOON',
-        });
-
-        game.startNewRound().then((round) => {
-          round.players.forEach((roundPlayer) => {
-            console.log('EMITTING ROUND STARTED', roundPlayer);
-            this.emitPlayerEvent(
-              game.id,
-              roundPlayer.playerId,
-              {
-                type: 'ROUND_STARTED',
-                payload: {
-                  roundId: round.id,
-                  cards: roundPlayer.cards,
-                },
-              },
-            );
-          });
-        });
-      } else {
-        this.emitGameEvent(data.gameId, {
-          type: 'WAITING_FOR_PLAYERS',
-          payload: {
-            gameId: data.gameId,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Failed to create player:', error);
-      socket.emit('error', 'Failed to join game');
-    }
-  }
-
-  private handleLeaveGame(socket: Socket, gameId: number) {
-    console.log('LEAVE GAME ON GAME SERVER', gameId);
-    const sockets = this.gameRoomConnections.get(gameId);
-
-    if (sockets) {
-      this.gameRoomConnections.set(
-        gameId,
-        sockets.filter((s) => s.socketId !== socket.id),
-      );
-    }
-  }
-
-  private handlePlaceBet(gameId: number, amount: number) {
-    console.log('PLACE BET ON GAME SERVER', gameId, amount);
-  }
-
   public emitGameEvent(gameId: number, event: unknown) {
     const sockets = this.gameRoomConnections.get(gameId);
 
@@ -149,13 +68,33 @@ export class SocketManager {
     }
   }
 
-  public emitPlayerEvent(gameId: number, playerId: number, event: unknown) {
+  public emitUserEvent(gameId: number, userId: number, event: unknown) {
     const sockets = this.gameRoomConnections.get(gameId) || [];
-    const playerSocket = sockets.find((s) => s.playerId === playerId);
+    const playerSocket = sockets.find((s) => s.userId === userId);
 
     if (playerSocket) {
       this.io.to(playerSocket.socketId).emit('game-update', event);
     }
+  }
+
+  public addUserToGameRoom(gameId: number, userId: number, socketId: string) {
+    const gameRoomSockets = this.gameRoomConnections.get(gameId) || [];
+    const existingSocket = gameRoomSockets.find((s) => s.userId === userId);
+
+    if (!existingSocket) {
+      this.gameRoomConnections.set(
+        gameId,
+        [...gameRoomSockets, { userId, socketId }],
+      );
+    } else {
+      throw new Error('User is already in game room...');
+    }
+  }
+
+  public removeUserFromGameRoom(gameId: number, userId: number) {
+    const gameRoomSockets = this.gameRoomConnections.get(gameId) || [];
+    const newGameRoomSockets = gameRoomSockets.filter((s) => s.userId !== userId);
+    this.gameRoomConnections.set(gameId, newGameRoomSockets);
   }
 }
 

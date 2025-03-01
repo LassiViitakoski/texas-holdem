@@ -1,8 +1,5 @@
-import type { z } from 'zod';
+export type BaseEvent = Record<string, any>;
 
-export type InboundSocketEventDefinition<
-  T extends z.ZodObject<any, any, any, any, any> = z.ZodObject<any, any, any, any, any>,
-> = {
-  handler: (socketId: string, payload: z.infer<T>) => void,
-  schema: T;
+export type EventHandlerMap<T extends BaseEvent> = {
+  [K in keyof T]: (payload: T[K]) => void;
 };

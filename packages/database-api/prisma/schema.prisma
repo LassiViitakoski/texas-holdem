@@ -185,8 +185,8 @@ model TablePosition {
 
   game      Game     @relation(fields: [gameId], references: [id])
   gameId    Int      @map("game_id")
-  player    Player   @relation(fields: [playerId], references: [id])
-  playerId  Int      @map("player_id")
+  player    Player?   @relation(fields: [playerId], references: [id])
+  playerId  Int?      @map("player_id")
 
   @@unique([gameId, position])  // Ensure no duplicate positions at same table
   @@unique([gameId, playerId])  // Ensure player can't sit in multiple positions

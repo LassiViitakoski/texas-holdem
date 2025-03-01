@@ -1,17 +1,13 @@
-import { DatabaseApi } from '@texas-holdem/database-api';
 import type {
   Blind,
   ChipUnit,
-  IRound,
   ITablePosition,
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
 import {
   Round,
 } from './round';
-import { EventBus } from '../services/event-bus';
 import { Player } from './player';
-import { socketManager } from '../services/socket-manager';
 
 interface GameConstructorParams {
   id: number;
@@ -39,7 +35,7 @@ export class Game {
 
   public players: Player[];
 
-  public activeRound?: IRound;
+  public activeRound?: Round;
 
   public tablePositions: ITablePosition[];
 
@@ -55,18 +51,15 @@ export class Game {
   }
 
   public isReadyToStart() {
-    console.log({
-      activeRound: !!this.activeRound,
-      playersLength: this.players.length,
-      minimumPlayers: this.minimumPlayers,
-      maximumPlayers: this.maximumPlayers,
-    });
-    return !this.activeRound
-      && this.players.length >= this.minimumPlayers
+    return this.players.length >= this.minimumPlayers
       && this.players.length <= this.maximumPlayers;
   }
 
   public join(player: Player) {
+    if (this.players.length >= this.maximumPlayers) {
+      throw new Error('Game is full : {Game.join()}');
+    }
+
     this.players.push(player);
   }
 
@@ -108,6 +101,7 @@ export class Game {
     */
 
     this.activeRound = await Round.create(this.id, this.players, this.blinds);
+    this.activeRound.emitRoundStarted(this.id);
     return this.activeRound as Round;
   }
 

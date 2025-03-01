@@ -6,6 +6,7 @@ import { Player } from '../player';
 import { Card, Deck } from '../../models';
 import { BettingRoundPlayer } from './betting-round-player';
 import { BettingRoundPlayerAction } from './betting-round-player-action';
+import { socketManager } from '../../services/socket-manager';
 
 interface RoundConstructorParams {
   id: number;
@@ -92,5 +93,59 @@ export class Round implements IRound {
     return this.players
       .sort((a, b) => a.sequence - b.sequence)
       .find((p) => !p.hasActed);
+  }
+
+  public emitRoundStarted(gameId: number) {
+    const roundPayload = {
+      roundId: this.id,
+      pot: this.pot,
+      isFinished: this.isFinished,
+      roundPlayers: this.players.map((roundPlayer) => ({
+        id: roundPlayer.id,
+        playerId: roundPlayer.playerId,
+        stack: roundPlayer.stack,
+      })),
+      bettinRounds: this.bettingRounds.map((bettingRound) => ({
+        id: bettingRound.id,
+        isFinished: bettingRound.isFinished,
+        bettingRoundPlayers: bettingRound.players.map((bettingRoundPlayer) => ({
+          id: bettingRoundPlayer.id,
+          hasActed: bettingRoundPlayer.hasActed,
+          hasFolded: bettingRoundPlayer.hasFolded,
+          sequence: bettingRoundPlayer.sequence,
+          stack: bettingRoundPlayer.stack,
+          actions: bettingRoundPlayer.actions.map((action) => ({
+            id: action.id,
+            type: action.type,
+            amount: action.amount,
+            sequence: action.sequence,
+          })),
+        })),
+      })),
+    };
+
+    this.players.forEach((roundPlayer) => {
+      const roundPlayerUserId = this.players.find((p) => p.id === roundPlayer.playerId)?.userId;
+
+      if (!roundPlayerUserId) {
+        throw new Error('User not found on {handleJoinGame()}');
+      }
+
+      socketManager.emitGameEvent(gameId, {
+        type: 'ROUND_STARTED',
+        payload: roundPayload,
+      });
+
+      socketManager.emitUserEvent(
+        gameId,
+        roundPlayerUserId,
+        {
+          type: 'ROUND_CARDS_DEALT',
+          payload: {
+            cards: roundPlayer.cards,
+          },
+        },
+      );
+    });
   }
 }

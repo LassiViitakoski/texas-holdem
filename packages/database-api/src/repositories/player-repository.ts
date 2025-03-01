@@ -17,16 +17,10 @@ export class PlayerRepository {
         game: { connect: { id: gameId } },
         user: { connect: { id: userId } },
       },
-      include: {
-        game: {
-          include: {
-            players: {
-              select: {
-                _count: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        stack: true,
+        userId: true,
         user: {
           select: {
             username: true,
