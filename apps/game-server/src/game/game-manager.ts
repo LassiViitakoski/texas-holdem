@@ -4,14 +4,20 @@ import { Game } from './game';
 import { Player } from './player';
 import type { EventHandlerMap } from '../types';
 import { socketManager } from '../services/socket-manager';
+import { TablePosition } from './table-position';
 
 const schemas = {
-  joinGame: z.object({
+  gameJoin: z.object({
     gameId: z.number(),
     buyIn: z.number(),
     userId: z.number(),
+    position: z.number(),
   }),
-  leaveGame: z.object({
+  gameSpectatorJoin: z.object({
+    gameId: z.number(),
+    userId: z.number(),
+  }),
+  gameLeave: z.object({
     gameId: z.number(),
     userId: z.number(),
   }),
@@ -32,12 +38,16 @@ export class GameManager {
    * @description Socket events with Zod validation schemas for runtime type checking of browser messages
    */
   public readonly socketEvents = {
+    GAME_SPECTATOR_JOIN: {
+      schema: schemas.gameSpectatorJoin,
+      handler: this.handleGameSpectatorJoin.bind(this),
+    },
     GAME_JOIN: {
-      schema: schemas.joinGame,
+      schema: schemas.gameJoin,
       handler: this.handleGameJoin.bind(this),
     },
     GAME_LEAVE: {
-      schema: schemas.leaveGame,
+      schema: schemas.gameLeave,
       handler: this.handleGameLeave.bind(this),
     },
   } as const;
@@ -76,19 +86,38 @@ export class GameManager {
       ...gameDetails
     }) => new Game({
       ...gameDetails,
-      players: players.map(({ user, ...player }) => new Player({ ...player, username: user.username })),
-      blinds: blinds.sort((a, b) => a.sequence - b.sequence),
+      players: new Map(players.map(({ user, ...player }) => [
+        player.id,
+        new Player({ ...player, username: user.username }),
+      ])),
+      blinds: blinds.sort((a, b) => a.position - b.position),
     }));
 
     this.initialized = true;
   }
 
   public handleGameCreated(payload: Awaited<ReturnType<typeof db.game.create>>) {
-    console.log('Handle game created', payload);
+    const {
+      blinds, players, tablePositions, ...gameDetails
+    } = payload;
+
+    const game = new Game({
+      ...gameDetails,
+      tablePositions: tablePositions.map((tPosition) => new TablePosition(tPosition)),
+      players: new Map(players.map(({ user, ...player }) => [
+        player.id,
+        new Player({ ...player, username: user.username }),
+      ])),
+      blinds: blinds.sort((a, b) => a.position - b.position),
+    });
+
+    this.addGame(game);
   }
 
-  public async handleGameJoin(socketId: string, payload: z.infer<typeof schemas.joinGame>) {
-    const { gameId, buyIn, userId } = payload;
+  public async handleGameJoin(socketId: string, payload: z.infer<typeof schemas.gameJoin>) {
+    const {
+      gameId, buyIn, userId, position,
+    } = payload;
 
     const game = this.getGame(gameId);
 
@@ -96,24 +125,37 @@ export class GameManager {
       throw new Error('Game not found on {handleGameJoin()}');
     }
 
-    const { user, ...playerDetails } = await db.player.create({
+    if (game.isFull()) {
+      throw new Error('Game is full on {handleGameJoin()}');
+    }
+
+    if (!game.isPositionAvailable(position)) {
+      throw new Error('Position is not available on {handleGameJoin()}');
+    }
+
+    const {
+      user: userDetails,
+      tablePosition: tablePositionDetails,
+      ...playerDetails
+    } = await db.player.create({
       gameId,
       stack: buyIn,
       userId,
+      position,
     });
 
-    const player = new Player({
-      ...playerDetails,
-      username: user.username,
+    const player = new Player({ ...playerDetails, username: userDetails.username });
+    game.join({
+      player,
+      tablePosition: new TablePosition({ ...tablePositionDetails[0], playerId: player.id }),
     });
 
-    game.join(player);
     socketManager.addUserToGameRoom(gameId, userId, socketId);
     socketManager.emitGameEvent(gameId, {
       type: 'PLAYER_JOINED',
       payload: {
         playerId: player.id,
-        name: user.username,
+        name: userDetails.username,
         stack: playerDetails.stack,
       },
     });
@@ -133,10 +175,21 @@ export class GameManager {
       return;
     }
 
-    await game.startNewRound();
+    await game.initiateNewRound();
   }
 
-  public handleGameLeave(_: string, payload: z.infer<typeof schemas.leaveGame>) {
+  public handleGameSpectatorJoin(socketId: string, payload: z.infer<typeof schemas.gameSpectatorJoin>) {
+    const { gameId, userId } = payload;
+    socketManager.addUserToGameRoom(gameId, userId, socketId, true);
+    socketManager.emitUserEvent(gameId, userId, {
+      type: 'CURRENT_GAME_DATA',
+      payload: {
+        game: JSON.parse(JSON.stringify(this.getGame(gameId))),
+      },
+    });
+  }
+
+  public handleGameLeave(_: string, payload: z.infer<typeof schemas.gameLeave>) {
     const { gameId, userId } = payload;
     const activeGame = this.getGame(gameId);
 

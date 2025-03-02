@@ -22,7 +22,7 @@ export class SocketManager {
 
   private httpServer: ReturnType<typeof createServer>;
 
-  private gameRoomConnections: Map<number, { userId: number; socketId: string }[]> = new Map();
+  private gameRoomConnections: Map<number, { userId: number; socketId: string; isSpectator: boolean }[]> = new Map();
 
   private constructor(port: number) {
     this.httpServer = createServer();
@@ -77,14 +77,14 @@ export class SocketManager {
     }
   }
 
-  public addUserToGameRoom(gameId: number, userId: number, socketId: string) {
+  public addUserToGameRoom(gameId: number, userId: number, socketId: string, isSpectator = false) {
     const gameRoomSockets = this.gameRoomConnections.get(gameId) || [];
     const existingSocket = gameRoomSockets.find((s) => s.userId === userId);
 
     if (!existingSocket) {
       this.gameRoomConnections.set(
         gameId,
-        [...gameRoomSockets, { userId, socketId }],
+        [...gameRoomSockets, { userId, socketId, isSpectator }],
       );
     } else {
       throw new Error('User is already in game room...');

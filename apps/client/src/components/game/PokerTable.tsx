@@ -5,6 +5,9 @@ import { CommunityCards } from './CommunityCards';
 import { useGameSocket } from '@/hooks/useGameSocket';
 import { useParams } from '@tanstack/react-router';
 import { BetButton } from './BetButton';
+import { useGameState, useGameActions } from '@/contexts/GameContext';
+import { gameSocketActions } from '@/services/gameSocket';
+import { useLocalStorageUser } from '@/hooks/useUsers';
 
 export const PokerTable = () => {
   console.log('Poker Table Rendering')
@@ -22,6 +25,24 @@ export const PokerTable = () => {
 
   const socket = useGameSocket(gameIdNumeric);
 
+  // Select only the state you need
+  const gameIdState = useGameState(state => state.gameId);
+  const playersState = useGameState(state => state.players);
+  const communityCards = useGameState(state => state.communityCards);
+  const isSpectator = useGameState(state => state.isSpectator);
+
+  // Get actions
+  const actions = useGameActions();
+
+  // Join as player handler
+  const handleJoinTable = (position: number) => {
+    if (!gameIdState) return;
+
+    const user = useLocalStorageUser();
+    gameSocketActions.joinAsPlayer(gameIdState, user.id, 100, position);
+    actions.setAsSpectator(false);
+  }
+
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
       <div className="relative w-full max-w-4xl aspect-[16/9]">
@@ -34,17 +55,21 @@ export const PokerTable = () => {
           <Chip amount={250} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
-          <CommunityCards />
-          <BetButton gameId={gameIdNumeric} amount={100} />
-          <button type="button" onClick={() => {
-            socket.onGameUpdate((event) => {
-              console.log(`GAME UPDATE {${event.type}} FROM SERVER`, event.payload);
-            });
-            socket.joinGame()
-          }}>Sit on table</button>
+          <CommunityCards cards={communityCards} />
+          {isSpectator ? (
+            <button
+              type="button"
+              onClick={() => handleJoinTable(0)}
+              className="px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              Sit on table
+            </button>
+          ) : (
+            <BetButton amount={100} />
+          )}
         </div>
-        {players.map((player, index) => (
-          <PlayerPosition key={index} position={index} player={player} isDealer={index === 0} />
+        {playersState.map((player, index) => (
+          <PlayerPosition key={player.id} position={player.position} player={player} isDealer={player.position === 0} />
         ))}
       </div>
     </div>

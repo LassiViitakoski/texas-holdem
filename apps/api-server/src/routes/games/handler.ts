@@ -27,7 +27,7 @@ export const createGameHandler = withErrorHandler<typeof GameResponse, typeof Cr
     blinds,
     maximumPlayers,
   });
-  await publishEvent('GAME_CREATED', JSON.stringify(createdGame));
+  await publishEvent('GAME_CREATED', createdGame);
   return reply.code(201).send(createdGame);
 });
 

@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js';
 
-interface PlayerConstructorParams {
+interface PlayerProps {
   id: number;
   userId: number;
   username: string;
@@ -16,7 +16,7 @@ export class Player {
 
   public stack: Decimal;
 
-  constructor(params: PlayerConstructorParams) {
+  constructor(params: PlayerProps) {
     this.id = params.id;
     this.userId = params.userId;
     this.username = params.username;

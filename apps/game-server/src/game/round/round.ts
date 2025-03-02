@@ -1,23 +1,24 @@
 import { Decimal } from 'decimal.js';
-import type { Blind, IRound, IRoundPlayer } from '@texas-holdem/shared-types';
+import type { RoundPlayer } from '@texas-holdem/shared-types';
 import { db } from '@texas-holdem/database-api';
 import { BettingRound } from './betting-round';
-import { Player } from '../player';
 import { Card, Deck } from '../../models';
 import { BettingRoundPlayer } from './betting-round-player';
 import { BettingRoundPlayerAction } from './betting-round-player-action';
 import { socketManager } from '../../services/socket-manager';
+import type { Game } from '../game';
 
-interface RoundConstructorParams {
+interface RoundProps {
   id: number;
   pot: Decimal;
   isFinished: boolean;
   bettingRounds: BettingRound[];
-  players: IRoundPlayer[];
+  players: RoundPlayer[];
   deck: Deck;
+  game: Game;
 }
 
-export class Round implements IRound {
+export class Round {
   public id: number;
 
   public pot: Decimal;
@@ -26,73 +27,100 @@ export class Round implements IRound {
 
   public bettingRounds: BettingRound[];
 
-  public players: IRoundPlayer[];
+  public players: Map<number, RoundPlayer>;
 
   public deck: Deck;
 
-  static async create(gameId: number, players: Player[], blinds: Blind<Decimal>[]) {
-    const deck = new Deck().shuffle();
+  private readonly game: Game;
 
-    const roundCreationData = await db.round.create({
-      gameId,
-      pot: blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
-      players: players.map((player, index) => ({
-        id: player.id,
-        stack: player.stack,
-        sequence: index + 1,
-        playerId: player.id,
-        cards: [
-          deck.draw().toString(),
-          deck.draw().toString(),
-        ],
-      })),
-      actions: blinds.map((blind, index) => ({
-        sequence: index + 1,
+  static async create(game: Game) {
+    const deck = new Deck().shuffle();
+    const dealerIndex = game.tablePositions.findIndex((tablePosition) => tablePosition.isDealer);
+    const dealer = game.tablePositions[dealerIndex];
+
+    if (!dealer) {
+      throw new Error('Dealer not found on {Round.create()}');
+    }
+
+    // Leaves dealer as last player to act
+    const positionsOrderedForRound = [
+      ...game.tablePositions.slice(dealerIndex + 1),
+      ...game.tablePositions.slice(0, dealerIndex + 1),
+    ]
+      .filter((tablePosition) => tablePosition.isActive);
+
+    const {
+      firstBettingRound: firstBettingRoundDetails,
+      roundPlayers: roundPlayersDetails,
+      ...roundDetails
+    } = await db.round.create({
+      gameId: game.id,
+      pot: game.blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
+      players: positionsOrderedForRound.map(({ playerId }) => {
+        const player = game.players.get(playerId!);
+
+        if (!player) {
+          throw new Error('Player ID not found on {Round.create()}');
+        }
+
+        return {
+          id: player.id,
+          stack: player.stack,
+          playerId: player.id,
+          cards: [
+            deck.draw().toString(),
+            deck.draw().toString(),
+          ],
+        };
+      }),
+      actions: [
+        // Reverse blinds in head-to-head games
+        ...(game.blinds.length === 2 && positionsOrderedForRound.length === 2
+          ? game.blinds.toReversed()
+          : game.blinds
+        ),
+      ].map((blind, index) => ({
         type: 'BLIND',
         amount: blind.amount,
+        sequence: index + 1,
       })),
     });
-
-    const { firstBettingRound, roundPlayers, ...roundProps } = roundCreationData;
 
     const bettingRound = new BettingRound({
-      ...firstBettingRound,
-      players: firstBettingRound.players.map((betRoundPlayer) => new BettingRoundPlayer({
-        ...betRoundPlayer,
+      ...firstBettingRoundDetails,
+      players: firstBettingRoundDetails.players.map((bettingRoundPlayer) => new BettingRoundPlayer({
+        ...bettingRoundPlayer,
         hasActed: false,
         hasFolded: false,
-        actions: betRoundPlayer
+        actions: bettingRoundPlayer
           .actions
-          .map((betRoundPlayerAction) => new BettingRoundPlayerAction(betRoundPlayerAction)),
+          .map((bettingRoundPlayerAction) => new BettingRoundPlayerAction(bettingRoundPlayerAction)),
       })),
     });
 
-    const mappedRoundPlayers = roundPlayers.map((roundPlayer) => ({
-      ...roundPlayer,
-      cards: roundPlayer.cards.map((card) => Card.fromString(card)),
-    }));
-
     return new Round({
-      ...roundProps,
+      ...roundDetails,
       deck,
-      players: mappedRoundPlayers,
+      game,
       bettingRounds: [bettingRound],
+      players: roundPlayersDetails.map((roundPlayer) => ({
+        ...roundPlayer,
+        cards: roundPlayer.cards.map((card) => Card.fromString(card)),
+      })),
     });
   }
 
-  constructor(params: RoundConstructorParams) {
+  constructor(params: RoundProps) {
     this.id = params.id;
     this.pot = params.pot;
     this.isFinished = params.isFinished;
     this.bettingRounds = params.bettingRounds;
-    this.players = params.players;
     this.deck = params.deck;
-  }
-
-  public getNextToAct(): IRoundPlayer | undefined {
-    return this.players
-      .sort((a, b) => a.sequence - b.sequence)
-      .find((p) => !p.hasActed);
+    this.game = params.game;
+    this.players = new Map(params.players.map((player) => [
+      player.id,
+      player,
+    ]));
   }
 
   public emitRoundStarted(gameId: number) {
@@ -100,7 +128,7 @@ export class Round implements IRound {
       roundId: this.id,
       pot: this.pot,
       isFinished: this.isFinished,
-      roundPlayers: this.players.map((roundPlayer) => ({
+      roundPlayers: Array.from(this.players.values()).map((roundPlayer) => ({
         id: roundPlayer.id,
         playerId: roundPlayer.playerId,
         stack: roundPlayer.stack,
@@ -108,11 +136,11 @@ export class Round implements IRound {
       bettinRounds: this.bettingRounds.map((bettingRound) => ({
         id: bettingRound.id,
         isFinished: bettingRound.isFinished,
-        bettingRoundPlayers: bettingRound.players.map((bettingRoundPlayer) => ({
+        bettingRoundPlayers: Array.from(bettingRound.players.values()).map((bettingRoundPlayer) => ({
           id: bettingRoundPlayer.id,
           hasActed: bettingRoundPlayer.hasActed,
           hasFolded: bettingRoundPlayer.hasFolded,
-          sequence: bettingRoundPlayer.sequence,
+          position: bettingRoundPlayer.position,
           stack: bettingRoundPlayer.stack,
           actions: bettingRoundPlayer.actions.map((action) => ({
             id: action.id,
@@ -124,21 +152,22 @@ export class Round implements IRound {
       })),
     };
 
-    this.players.forEach((roundPlayer) => {
-      const roundPlayerUserId = this.players.find((p) => p.id === roundPlayer.playerId)?.userId;
+    socketManager.emitGameEvent(gameId, {
+      type: 'ROUND_STARTED',
+      payload: roundPayload,
+    });
 
-      if (!roundPlayerUserId) {
+    this.players.forEach((roundPlayer) => {
+      const playerId = this.players.get(roundPlayer.playerId)?.playerId;
+      const userId = playerId ? this.game.players.get(playerId)?.userId : null;
+
+      if (!userId) {
         throw new Error('User not found on {handleJoinGame()}');
       }
 
-      socketManager.emitGameEvent(gameId, {
-        type: 'ROUND_STARTED',
-        payload: roundPayload,
-      });
-
       socketManager.emitUserEvent(
         gameId,
-        roundPlayerUserId,
+        userId,
         {
           type: 'ROUND_CARDS_DEALT',
           payload: {

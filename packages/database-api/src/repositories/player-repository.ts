@@ -5,17 +5,31 @@ interface CreatePlayerParams {
   gameId: number;
   stack: number;
   userId: number;
+  position: number;
 }
 
 export class PlayerRepository {
   constructor(private client: PrismaClient) {}
 
-  async create({ gameId, stack, userId }: CreatePlayerParams) {
+  async create({
+    gameId,
+    stack,
+    userId,
+    position,
+  }: CreatePlayerParams) {
     return this.client.player.create({
       data: {
         stack: new Decimal(stack),
         game: { connect: { id: gameId } },
         user: { connect: { id: userId } },
+        tablePosition: {
+          connect: {
+            gameId_position: {
+              gameId,
+              position,
+            },
+          },
+        },
       },
       select: {
         id: true,
@@ -24,6 +38,16 @@ export class PlayerRepository {
         user: {
           select: {
             username: true,
+          },
+        },
+        tablePosition: {
+          select: {
+            id: true,
+            gameId: true,
+            isActive: true,
+            isDealer: true,
+            playerId: true,
+            position: true,
           },
         },
       },

@@ -4,6 +4,7 @@ import {
   RoundRepository,
   PlayerRepository,
   UserRepository,
+  TablePositionRepository,
 } from './repositories';
 
 export class DatabaseApi {
@@ -19,12 +20,15 @@ export class DatabaseApi {
 
   public readonly player: PlayerRepository;
 
+  public readonly tablePosition: TablePositionRepository;
+
   private constructor() {
     this.client = new PrismaClient();
     this.user = new UserRepository(this.client);
     this.game = new GameRepository(this.client);
     this.round = new RoundRepository(this.client);
     this.player = new PlayerRepository(this.client);
+    this.tablePosition = new TablePositionRepository(this.client);
   }
 
   public static getInstance(): DatabaseApi {
@@ -39,6 +43,7 @@ export class DatabaseApi {
   }
 
   public async resetDb(): Promise<void> {
+    await this.client.tablePosition.deleteMany();
     await this.client.bettingRoundPlayerAction.deleteMany();
     await this.client.bettingRoundPlayer.deleteMany();
     await this.client.bettingRound.deleteMany();

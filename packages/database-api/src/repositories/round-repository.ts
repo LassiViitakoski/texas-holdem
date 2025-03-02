@@ -1,14 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type {
-  IBettingRoundPlayerAction, Optional, IRoundPlayer,
-} from '@texas-holdem/shared-types';
+import type { BettingRoundPlayerAction } from '@prisma/client';
+import type { RoundPlayer } from '@texas-holdem/shared-types';
 
 type CreateRoundData = {
   pot: Decimal;
-  players: (Pick<IRoundPlayer, 'stack' | 'playerId'> & { cards: string[] })[];
+  players: (Pick<RoundPlayer, 'stack' | 'playerId'> & { cards: string[] })[];
   gameId: number;
-  actions: Optional<IBettingRoundPlayerAction, 'id' | 'bettingRoundPlayerId'>[];
+  actions: Omit<BettingRoundPlayerAction, 'id' | 'bettingRoundPlayerId' | 'createdAt' | 'updatedAt'>[];
 };
 
 export class RoundRepository {
@@ -57,7 +56,7 @@ export class RoundRepository {
             create: round.roundPlayers.map((roundPlayer, index) => ({
               roundPlayer: { connect: { id: roundPlayer.id } },
               stack: roundPlayer.stack,
-              sequence: index + 1,
+              position: index + 1,
               actions: data.actions[index] ? {
                 create: {
                   sequence: data.actions[index].sequence,
@@ -78,7 +77,7 @@ export class RoundRepository {
             select: {
               id: true,
               stack: true,
-              sequence: true,
+              position: true,
               roundPlayerId: true,
               actions: {
                 select: {

@@ -1,7 +1,15 @@
 import { Decimal } from 'decimal.js';
-import type { IBettingRoundPlayerAction, BettingRoundPlayerActionType } from '@texas-holdem/shared-types';
+import type { BettingRoundPlayerActionType } from '@texas-holdem/shared-types';
 
-export class BettingRoundPlayerAction implements IBettingRoundPlayerAction {
+interface BettingRoundPlayerActionProps {
+  id: number;
+  type: BettingRoundPlayerActionType;
+  sequence: number;
+  amount: Decimal;
+  bettingRoundPlayerId: number;
+}
+
+export class BettingRoundPlayerAction {
   public id: number;
 
   public type: BettingRoundPlayerActionType;
@@ -12,7 +20,7 @@ export class BettingRoundPlayerAction implements IBettingRoundPlayerAction {
 
   public bettingRoundPlayerId: number;
 
-  constructor(params: IBettingRoundPlayerAction) {
+  constructor(params: BettingRoundPlayerActionProps) {
     this.id = params.id;
     this.type = params.type;
     this.sequence = params.sequence;

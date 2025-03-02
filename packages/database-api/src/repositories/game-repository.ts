@@ -15,7 +15,7 @@ export class GameRepository {
         rake: 0.00,
         blinds: {
           create: data.blinds.map((amount, index) => ({
-            sequence: index,
+            position: index + 1,
             amount,
           })),
         },
@@ -46,103 +46,54 @@ export class GameRepository {
       where: {
         isInactive: false,
       },
-      select: {
-        id: true,
-        minimumPlayers: true,
-        maximumPlayers: true,
-        chipUnit: true,
-        rake: true,
-        blinds: {
-          select: {
-            id: true,
-            sequence: true,
-            amount: true,
-          },
-        },
+      include: {
+        blinds: true,
+        tablePositions: true,
         players: {
-          select: {
-            id: true,
-            stack: true,
-            userId: true,
+          include: {
             user: {
               select: {
                 username: true,
               },
             },
           },
-
         },
         rounds: {
           where: {
             isFinished: false,
           },
-          select: {
-            roundPlayers: {
-              select: {
-                id: true,
-                stack: true,
-                cards: true,
-                playerId: true,
-              },
-            },
+          include: {
+            roundPlayers: true,
             bettingRounds: {
-              select: {
-                id: true,
-                type: true,
-                isFinished: true,
+              include: {
                 players: {
-                  select: {
-                    id: true,
-                    stack: true,
-                    sequence: true,
-                    roundPlayerId: true,
-                    actions: {
-                      select: {
-                        id: true,
-                        type: true,
-                        sequence: true,
-                        amount: true,
-                        bettingRoundPlayerId: true,
-                      },
-                    },
+                  include: {
+                    actions: true,
                   },
                 },
               },
             },
           },
-        },
-        tablePositions: {
-          select: {
-            id: true,
-            position: true,
-            isActive: true,
-            isDealer: true,
-            playerId: true,
-          },
+
         },
       },
+
     });
   }
 
   async getGame(id: number) {
     const game = await this.client.game.findUnique({
       where: { id },
-      select: {
-        id: true,
-        minimumPlayers: true,
-        maximumPlayers: true,
-        chipUnit: true,
-        rake: true,
-        createdAt: true,
-        updatedAt: true,
-        blinds: {
-          select: {
-            id: true,
-            sequence: true,
-            amount: true,
-          },
-          orderBy: {
-            sequence: 'asc',
+      include: {
+        blinds: true,
+        tablePositions: true,
+        players: {
+          include: {
+            user: {
+              select: {
+                username: true,
+              },
+            },
           },
         },
       },
@@ -156,6 +107,7 @@ export class GameRepository {
   }
 
   async clearRounds() {
+    await this.client.tablePosition.deleteMany();
     await this.client.bettingRoundPlayerAction.deleteMany();
     await this.client.bettingRoundPlayer.deleteMany();
     await this.client.bettingRound.deleteMany();

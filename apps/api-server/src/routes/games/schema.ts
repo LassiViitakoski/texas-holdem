@@ -32,7 +32,7 @@ export const GameResponse = Type.Object({
   updatedAt: Type.String({ format: 'date-time' }),
   blinds: Type.Array(Type.Object({
     id: Type.Number(),
-    sequence: Type.Number(),
+    position: Type.Number(),
     amount: Type.Number(),
   })),
 });

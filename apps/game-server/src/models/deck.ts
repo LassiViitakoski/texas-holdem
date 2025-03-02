@@ -1,8 +1,7 @@
-import type { CardSuit, CardRank, IDeck } from '@texas-holdem/shared-types';
-
+import type { CardSuit, CardRank } from '@texas-holdem/shared-types';
 import { Card } from './card';
 
-export class Deck implements IDeck {
+export class Deck {
   public cards: Card[];
 
   private static readonly ranks: CardRank[] = ['2', '3', '4', '5', '6', '7', '9', '10', 'J', 'Q', 'K', 'A'];

@@ -14,88 +14,20 @@ export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '9' | '10' | 'J' | 'Q
 
 export type CardSuit = 'Club' | 'Diamond' | 'Heart' | 'Spade';
 
-export type ICard = {
+export type Card = {
   rank: CardRank;
   suit: CardSuit;
 };
 
-export type IDeck = {
-  cards: ICard[];
-};
-
 export type Blind<T extends number | Decimal> = {
   id: number;
-  sequence: number;
+  position: number;
   amount: T;
 };
 
-export type IGame = {
-  id: number;
-  blinds: Blind<Decimal>[];
-  maximumPlayers: number;
-  minimumPlayers: number;
-  chipUnit: ChipUnit;
-  rake: Decimal;
-  players: IPlayer[];
-  activeRound?: IRound;
-  tablePositions: ITablePosition[];
-};
-
-export type ITablePosition = {
-  id: number;
-  position: number;
-  isActive: boolean;
-  isDealer: boolean;
-  playerId: number;
-}
-
-export type IRound<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
-  id: Persisted extends "PERSISTED" ? number : number | undefined;
-  pot: Decimal;
-  isFinished: boolean;
-  bettingRounds: IBettingRound[];
-  players: IRoundPlayer<Persisted>[];
-  deck: IDeck;
-};
-
-export type IBettingRound = {
-  id: number;
-  type: BettingRoundType;
-  isFinished: boolean;
-  players: IBettingRoundPlayer[];
-};
-
-export type IPlayer = {
-  id: number;
-  userId: number;
-  username: string;
-  stack: Decimal;
-};
-
-export type IRoundPlayer<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
+export type RoundPlayer<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
   id: Persisted extends "PERSISTED" ? number : number | undefined;
   stack: Decimal;
   playerId: number;
-  cards: ICard[];
+  cards: Card[];
 };
-
-export type IBettingRoundPlayer = {
-  id: number;
-  stack: Decimal;
-  sequence: number;
-  roundPlayerId: number;
-  actions: IBettingRoundPlayerAction[];
-
-  // Computed properties
-  hasActed: boolean;
-  hasFolded: boolean;
-};
-
-export type IBettingRoundPlayerAction<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
-  id: Persisted extends "PERSISTED" ? number : number | undefined;
-  type: BettingRoundPlayerActionType;
-  sequence: number;
-  amount: Decimal;
-  bettingRoundPlayerId: Persisted extends "PERSISTED" ? number : number | undefined;
-};
-
