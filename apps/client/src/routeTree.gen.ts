@@ -14,8 +14,11 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
 import { Route as ProfileIndexImport } from './routes/profile/index'
 import { Route as GamesIndexImport } from './routes/games/index'
+import { Route as ActiveGamesIndexImport } from './routes/activeGames/index'
+import { Route as GamesRoomImport } from './routes/games/room'
 import { Route as GamesCreateImport } from './routes/games/create'
 import { Route as GamesGameIdImport } from './routes/games/$gameId'
+import { Route as GamesRoomGameIdImport } from './routes/games/room/$gameId'
 
 // Create/Update Routes
 
@@ -37,6 +40,18 @@ const GamesIndexRoute = GamesIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ActiveGamesIndexRoute = ActiveGamesIndexImport.update({
+  id: '/activeGames/',
+  path: '/activeGames/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const GamesRoomRoute = GamesRoomImport.update({
+  id: '/games/room',
+  path: '/games/room',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const GamesCreateRoute = GamesCreateImport.update({
   id: '/games/create',
   path: '/games/create',
@@ -47,6 +62,12 @@ const GamesGameIdRoute = GamesGameIdImport.update({
   id: '/games/$gameId',
   path: '/games/$gameId',
   getParentRoute: () => rootRoute,
+} as any)
+
+const GamesRoomGameIdRoute = GamesRoomGameIdImport.update({
+  id: '/$gameId',
+  path: '/$gameId',
+  getParentRoute: () => GamesRoomRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -74,6 +95,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesCreateImport
       parentRoute: typeof rootRoute
     }
+    '/games/room': {
+      id: '/games/room'
+      path: '/games/room'
+      fullPath: '/games/room'
+      preLoaderRoute: typeof GamesRoomImport
+      parentRoute: typeof rootRoute
+    }
+    '/activeGames/': {
+      id: '/activeGames/'
+      path: '/activeGames'
+      fullPath: '/activeGames'
+      preLoaderRoute: typeof ActiveGamesIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/games/': {
       id: '/games/'
       path: '/games'
@@ -88,25 +123,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexImport
       parentRoute: typeof rootRoute
     }
+    '/games/room/$gameId': {
+      id: '/games/room/$gameId'
+      path: '/$gameId'
+      fullPath: '/games/room/$gameId'
+      preLoaderRoute: typeof GamesRoomGameIdImport
+      parentRoute: typeof GamesRoomImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface GamesRoomRouteChildren {
+  GamesRoomGameIdRoute: typeof GamesRoomGameIdRoute
+}
+
+const GamesRoomRouteChildren: GamesRoomRouteChildren = {
+  GamesRoomGameIdRoute: GamesRoomGameIdRoute,
+}
+
+const GamesRoomRouteWithChildren = GamesRoomRoute._addFileChildren(
+  GamesRoomRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/create': typeof GamesCreateRoute
+  '/games/room': typeof GamesRoomRouteWithChildren
+  '/activeGames': typeof ActiveGamesIndexRoute
   '/games': typeof GamesIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/games/room/$gameId': typeof GamesRoomGameIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/create': typeof GamesCreateRoute
+  '/games/room': typeof GamesRoomRouteWithChildren
+  '/activeGames': typeof ActiveGamesIndexRoute
   '/games': typeof GamesIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/games/room/$gameId': typeof GamesRoomGameIdRoute
 }
 
 export interface FileRoutesById {
@@ -114,22 +174,44 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/create': typeof GamesCreateRoute
+  '/games/room': typeof GamesRoomRouteWithChildren
+  '/activeGames/': typeof ActiveGamesIndexRoute
   '/games/': typeof GamesIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/games/room/$gameId': typeof GamesRoomGameIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$gameId' | '/games/create' | '/games' | '/profile'
+  fullPaths:
+    | '/'
+    | '/games/$gameId'
+    | '/games/create'
+    | '/games/room'
+    | '/activeGames'
+    | '/games'
+    | '/profile'
+    | '/games/room/$gameId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$gameId' | '/games/create' | '/games' | '/profile'
+  to:
+    | '/'
+    | '/games/$gameId'
+    | '/games/create'
+    | '/games/room'
+    | '/activeGames'
+    | '/games'
+    | '/profile'
+    | '/games/room/$gameId'
   id:
     | '__root__'
     | '/'
     | '/games/$gameId'
     | '/games/create'
+    | '/games/room'
+    | '/activeGames/'
     | '/games/'
     | '/profile/'
+    | '/games/room/$gameId'
   fileRoutesById: FileRoutesById
 }
 
@@ -137,6 +219,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GamesGameIdRoute: typeof GamesGameIdRoute
   GamesCreateRoute: typeof GamesCreateRoute
+  GamesRoomRoute: typeof GamesRoomRouteWithChildren
+  ActiveGamesIndexRoute: typeof ActiveGamesIndexRoute
   GamesIndexRoute: typeof GamesIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
@@ -145,6 +229,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GamesGameIdRoute: GamesGameIdRoute,
   GamesCreateRoute: GamesCreateRoute,
+  GamesRoomRoute: GamesRoomRouteWithChildren,
+  ActiveGamesIndexRoute: ActiveGamesIndexRoute,
   GamesIndexRoute: GamesIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }
@@ -162,6 +248,8 @@ export const routeTree = rootRoute
         "/",
         "/games/$gameId",
         "/games/create",
+        "/games/room",
+        "/activeGames/",
         "/games/",
         "/profile/"
       ]
@@ -170,16 +258,29 @@ export const routeTree = rootRoute
       "filePath": "index.tsx"
     },
     "/games/$gameId": {
-      "filePath": "games/$gameId.ts"
+      "filePath": "games/$gameId.tsx"
     },
     "/games/create": {
       "filePath": "games/create.tsx"
+    },
+    "/games/room": {
+      "filePath": "games/room.tsx",
+      "children": [
+        "/games/room/$gameId"
+      ]
+    },
+    "/activeGames/": {
+      "filePath": "activeGames/index.tsx"
     },
     "/games/": {
       "filePath": "games/index.tsx"
     },
     "/profile/": {
       "filePath": "profile/index.ts"
+    },
+    "/games/room/$gameId": {
+      "filePath": "games/room/$gameId.tsx",
+      "parent": "/games/room"
     }
   }
 }

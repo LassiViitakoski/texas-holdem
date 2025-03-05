@@ -15,12 +15,21 @@ class SocketService {
     return this.instance;
   }
 
-  joinGame(payload: { gameId: number, buyIn: number, userId: number }) {
+  joinGameAsSpectator(payload: { gameId: number, userId: number }) {
+    console.log('JOIN GAME AS SPECTATOR', payload);
+    this.socket.emit('GAME_JOIN_AS_SPECTATOR', {
+      gameId: payload.gameId,
+      userId: payload.userId,
+    });
+  }
+
+  joinGame(payload: { gameId: number, buyIn: number, userId: number, position: number }) {
     console.log('JOIN GAME', payload);
     this.socket.emit('GAME_JOIN', {
       gameId: payload.gameId,
       buyIn: payload.buyIn,
       userId: payload.userId,
+      position: payload.position,
     });
   }
 
@@ -35,6 +44,9 @@ class SocketService {
 
   onGameUpdate(callback: (event: any) => void) {
     this.socket.on('game-update', callback);
+    return () => {
+      this.socket.off('game-update', callback);
+    };
   }
 }
 

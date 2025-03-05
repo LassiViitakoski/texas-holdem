@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { useGameSocket } from '../../hooks/useGameSocket';
+import { useGameState } from '@/contexts/GameContext';
 
-export const BetButton = ({ gameId, amount }: { gameId: number; amount: number }) => {
-  const socketService = useGameSocket(gameId);
+export const BetButton = ({ amount }: { amount: number }) => {
+  const gameId = useGameState(state => state.gameId)
+  const socketService = useGameSocket(gameId!);
 
   const handleBet = () => {
     socketService.placeBet(amount);

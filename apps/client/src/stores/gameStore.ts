@@ -1,6 +1,7 @@
 // src/stores/gameStore.ts
 import { Store } from '@tanstack/react-store'
 import { produce } from 'immer' // Optional but recommended for immutable updates
+import { Card } from '@texas-holdem/shared-types'
 
 // Define clear, domain-specific types
 export type Player = {
@@ -11,11 +12,6 @@ export type Player = {
   position: number
   isCurrent: boolean
   hasFolded: boolean
-}
-
-export type Card = {
-  suit: 'heart' | 'diamond' | 'club' | 'spade'
-  value: string
 }
 
 export type GamePhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'

@@ -5,7 +5,7 @@ import { useLocalStorageUser } from '@/hooks/useUsers';
 import { useGameContext, useGameActions } from '@/contexts/GameContext';
 import { useEffect } from 'react';
 
-export const Route = createFileRoute('/games/$gameId')({
+export const Route = createFileRoute('/games/room/$gameId')({
   component: GameRouteComponent,
   loader: async ({ params }) => {
     return {
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/games/$gameId')({
 
 function GameRouteComponent() {
   // Explicitly type the loader data
-  const { gameId } = useLoaderData({ from: '/games/$gameId' })
+  const { gameId } = useLoaderData({ from: '/games/room/$gameId' })
 
   console.log('gameId', gameId);
 

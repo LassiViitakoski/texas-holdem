@@ -1,12 +1,12 @@
-import { Chip, DealerButton, PlayingCard } from '@/components/shared';
-import { PlayingCardType } from '@/types';
+import { Chip, DealerButton, Card } from '@/components/shared';
+import { Card as ICard } from '@texas-holdem/shared-types'
 
 type PlayerPositionProps = {
   position: number
   player: {
     name: string
-    chips: number
-    cards?: PlayingCardType[]
+    stack: number
+    cards?: ICard[]
   }
   isDealer: boolean
 }
@@ -25,10 +25,10 @@ export const PlayerPosition = ({ position, player, isDealer }: PlayerPositionPro
             <img src={`https://api.dicebear.com/6.x/personas/svg?seed=${player.name}`} alt={player.name} />
           </div>
           <p className="mt-1 text-xs font-medium text-white">{player.name}</p>
-          <Chip amount={player.chips} className="mt-1" />
+          <Chip amount={player.stack} className="mt-1" />
           {player.cards && (
             <div className="flex space-x-0.5">
-              {player.cards.map((card, index) => <PlayingCard key={index} card={card} />)}
+              {player.cards.map((card, index) => <Card key={index} card={card} />)}
             </div>
           )}
           {isDealer && <DealerButton className="absolute -top-1 -right-1" />}

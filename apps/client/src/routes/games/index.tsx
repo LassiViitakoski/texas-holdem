@@ -7,5 +7,5 @@ export const Route = createFileRoute('/games/')({
     <ErrorBoundary FallbackComponent={GameListErrorFallback}>
       <GameList />
     </ErrorBoundary>
-  )
+  ),
 });

@@ -11,7 +11,7 @@ import { useLocalStorageUser } from '@/hooks/useUsers';
 
 export const PokerTable = () => {
   console.log('Poker Table Rendering')
-  const { gameId } = useParams({ from: '/games/$gameId' });
+  const { gameId } = useParams({ from: '/games/room/$gameId' });
   const gameIdNumeric = parseInt(gameId, 10);
 
   const players: Player[] = [
