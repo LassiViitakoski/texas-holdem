@@ -13,7 +13,7 @@ const schemas = {
     userId: z.number(),
     position: z.number(),
   }),
-  gameSpectatorJoin: z.object({
+  gameRoomJoin: z.object({
     gameId: z.number(),
     userId: z.number(),
   }),
@@ -38,9 +38,9 @@ export class GameManager {
    * @description Socket events with Zod validation schemas for runtime type checking of browser messages
    */
   public readonly socketEvents = {
-    GAME_SPECTATOR_JOIN: {
-      schema: schemas.gameSpectatorJoin,
-      handler: this.handleGameSpectatorJoin.bind(this),
+    GAME_ROOM_JOIN: {
+      schema: schemas.gameRoomJoin,
+      handler: this.handeGameRoomJoin.bind(this),
     },
     GAME_JOIN: {
       schema: schemas.gameJoin,
@@ -178,11 +178,11 @@ export class GameManager {
     await game.initiateNewRound();
   }
 
-  public handleGameSpectatorJoin(socketId: string, payload: z.infer<typeof schemas.gameSpectatorJoin>) {
+  public handeGameRoomJoin(socketId: string, payload: z.infer<typeof schemas.gameRoomJoin>) {
     const { gameId, userId } = payload;
     socketManager.addUserToGameRoom(gameId, userId, socketId, true);
     socketManager.emitUserEvent(gameId, userId, {
-      type: 'CURRENT_GAME_DATA',
+      type: 'GAME_ROOM_JOIN_SUCCESS',
       payload: {
         game: JSON.parse(JSON.stringify(this.getGame(gameId))),
       },

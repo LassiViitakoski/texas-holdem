@@ -22,4 +22,13 @@ export class Player {
     this.username = params.username;
     this.stack = params.stack;
   }
+
+  toJSON() {
+    return {
+      id: this.id,
+      userId: this.userId,
+      username: this.username,
+      stack: this.stack.toNumber(),
+    };
+  }
 }

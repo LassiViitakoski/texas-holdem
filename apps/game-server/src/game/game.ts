@@ -49,6 +49,21 @@ export class Game {
     this.sortTablePositions();
   }
 
+  public toJSON() {
+    return {
+      id: this.id,
+      blinds: this.blinds,
+      maximumPlayers: this.maximumPlayers,
+      minimumPlayers: this.minimumPlayers,
+      chipUnit: this.chipUnit,
+      rake: this.rake,
+      players: Array.from(this.players.values()),
+      tablePositions: this.tablePositions,
+      activeRound: this.activeRound,
+
+    };
+  }
+
   private sortTablePositions(): void {
     this.tablePositions.sort((a, b) => a.position - b.position);
   }

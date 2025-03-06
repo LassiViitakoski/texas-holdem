@@ -28,8 +28,8 @@ export const PokerTable = () => {
   // Select only the state you need
   const gameIdState = useGameState(state => state.gameId);
   const playersState = useGameState(state => state.players);
-  const communityCards = useGameState(state => state.communityCards);
-  const isSpectator = useGameState(state => state.isSpectator);
+  const communityCards = useGameState(state => state.communityCards || []);
+  const isSpectator = useGameState(state => state.isSpectator || false);
 
   // Get actions
   const actions = useGameActions();

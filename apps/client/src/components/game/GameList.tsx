@@ -44,7 +44,7 @@ export const GameList = () => {
         {games?.map((game) => (
           <Link
             key={game.id}
-            to="/games/$gameId"
+            to="/games/room/$gameId"
             params={{ gameId: game.id.toString() }}
             className="block p-4 rounded-lg border hover:border-blue-500 transition-colors"
           >

@@ -16,16 +16,21 @@ export type Player = {
 
 export type GamePhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
 
-export interface GameState {
-  gameId: number | null
+export type Round = {
+  id: number
   phase: GamePhase
-  players: Player[]
   communityCards: Card[]
   pot: number
   currentBet: number
   dealerPosition: number
   currentTurn: number | null
-  isSpectator: boolean
+}
+
+export interface GameState {
+  gameId: number | null
+  players: Player[]
+  dealerPosition: number
+  activeRound: Round | null
 }
 
 // Initial state as a constant
@@ -39,6 +44,7 @@ const INITIAL_STATE: GameState = {
   dealerPosition: 0,
   currentTurn: null,
   isSpectator: false,
+  activeRound: null,
 }
 
 // Factory function to create a new store instance
@@ -56,8 +62,8 @@ export const gameActions = {
   updateFromSocketEvent: (store: GameStore, event: any) => {
     switch (event.type) {
       case 'PLAYER_JOINED':
-        store.setState(produce(state => {
-          state.players.push(event.payload)
+        store.setState(produce(draft => {
+          draft.players.push(event.payload)
         }))
         break
 
@@ -78,7 +84,14 @@ export const gameActions = {
         }))
         break
 
-      // Other event handlers...
+      case 'GAME_ROOM_JOIN_SUCCESS':
+        console.log('GAME_ROOM_JOIN_SUCCESS', event.payload)
+        store.setState(produce(draft => {
+          draft.gameId = event.payload.game.id
+          draft.players = event.payload.game.players
+          draft.activeRound = event.payload.game.activeRound
+        }))
+        break;
     }
   },
 

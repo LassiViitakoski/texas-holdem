@@ -17,7 +17,7 @@ class SocketService {
 
   joinGameAsSpectator(payload: { gameId: number, userId: number }) {
     console.log('JOIN GAME AS SPECTATOR', payload);
-    this.socket.emit('GAME_JOIN_AS_SPECTATOR', {
+    this.socket.emit('GAME_ROOM_JOIN', {
       gameId: payload.gameId,
       userId: payload.userId,
     });
@@ -33,9 +33,12 @@ class SocketService {
     });
   }
 
-  leaveGame(gameId: number) {
+  leaveGame(gameId: number, userId: number) {
     console.log('LEAVE GAME', gameId);
-    this.socket.emit('leave-game', gameId);
+    this.socket.emit('GAME_LEAVE', {
+      gameId,
+      userId,
+    });
   }
 
   placeBet(gameId: number, amount: number) {

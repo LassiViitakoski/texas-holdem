@@ -17,7 +17,7 @@ export function initializeGameSocket(gameId: number, userId: number, store: Game
   // Return cleanup function
   return () => {
     unsubscribe();
-    socketService.leaveGame(gameId)
+    socketService.leaveGame(gameId, userId)
   }
 }
 
