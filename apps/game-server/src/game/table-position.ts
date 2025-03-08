@@ -10,7 +10,7 @@ export type TablePositionProps = {
 };
 
 export class TablePosition {
-  private readonly id: number;
+  public readonly id: number;
 
   public readonly position: number;
 

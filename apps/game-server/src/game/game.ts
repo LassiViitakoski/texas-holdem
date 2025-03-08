@@ -77,16 +77,26 @@ export class Game {
     return this.players.size >= this.maximumPlayers;
   }
 
-  public isPositionAvailable(position: number) {
-    return position >= 1
-      && position <= this.maximumPlayers
-      && !this.tablePositions.some((pos) => pos.position === position);
+  public isPositionAvailable(positionId: number) {
+    const tablePositionIndex = this.tablePositions.findIndex((pos) => pos.id === positionId);
+    return tablePositionIndex !== -1
+      && !this.tablePositions[tablePositionIndex].isActive
+      && !this.tablePositions[tablePositionIndex].playerId;
   }
 
-  public join({ player, tablePosition }: { player: Player, tablePosition: TablePosition }) {
+  public join({ player, positionId }: { player: Player, positionId: number }) {
     this.players.set(player.id, player);
-    this.tablePositions.push(tablePosition);
-    this.sortTablePositions();
+    this.tablePositions = this.tablePositions.map((tablePosition) => {
+      if (tablePosition.id === positionId) {
+        if (tablePosition.isActive || tablePosition.playerId) {
+          throw new Error('Table position is not available {Game.join()}');
+        }
+
+        return { ...tablePosition, playerId: player.id } as TablePosition;
+      }
+
+      return tablePosition;
+    });
   }
 
   public async rotateDealer() {

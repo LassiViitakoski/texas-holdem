@@ -5,7 +5,7 @@ interface CreatePlayerParams {
   gameId: number;
   stack: number;
   userId: number;
-  position: number;
+  positionId: number;
 }
 
 export class PlayerRepository {
@@ -15,7 +15,7 @@ export class PlayerRepository {
     gameId,
     stack,
     userId,
-    position,
+    positionId,
   }: CreatePlayerParams) {
     return this.client.player.create({
       data: {
@@ -24,10 +24,7 @@ export class PlayerRepository {
         user: { connect: { id: userId } },
         tablePosition: {
           connect: {
-            gameId_position: {
-              gameId,
-              position,
-            },
+            id: positionId,
           },
         },
       },

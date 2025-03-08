@@ -11,7 +11,7 @@ const schemas = {
     gameId: z.number(),
     buyIn: z.number(),
     userId: z.number(),
-    position: z.number(),
+    positionId: z.number(),
   }),
   gameRoomJoin: z.object({
     gameId: z.number(),
@@ -117,7 +117,7 @@ export class GameManager {
 
   public async handleGameJoin(socketId: string, payload: z.infer<typeof schemas.gameJoin>) {
     const {
-      gameId, buyIn, userId, position,
+      gameId, buyIn, userId, positionId,
     } = payload;
 
     const game = this.getGame(gameId);
@@ -130,34 +130,31 @@ export class GameManager {
       throw new Error('Game is full on {handleGameJoin()}');
     }
 
-    if (!game.isPositionAvailable(position)) {
+    if (!game.isPositionAvailable(positionId)) {
       throw new Error('Position is not available on {handleGameJoin()}');
     }
 
-    const {
-      user: userDetails,
-      tablePosition: tablePositionDetails,
-      ...playerDetails
-    } = await db.player.create({
+    const { user: userDetails, ...playerDetails } = await db.player.create({
       gameId,
       stack: buyIn,
       userId,
-      position,
+      positionId,
     });
 
     const player = new Player({ ...playerDetails, username: userDetails.username });
+
     game.join({
       player,
-      tablePosition: new TablePosition({ ...tablePositionDetails[0], playerId: player.id }),
+      positionId,
     });
 
-    socketManager.addUserToGameRoom(gameId, userId, socketId);
+    socketManager.convertSpectatorToPlayer(gameId, userId, socketId);
+
     socketManager.emitGameEvent(gameId, {
       type: 'PLAYER_JOINED',
       payload: {
-        playerId: player.id,
-        name: userDetails.username,
-        stack: playerDetails.stack,
+        player: player.toJSON(),
+        tablePositionId: positionId,
       },
     });
 

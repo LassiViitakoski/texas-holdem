@@ -81,14 +81,30 @@ export class SocketManager {
     const gameRoomSockets = this.gameRoomConnections.get(gameId) || [];
     const existingSocket = gameRoomSockets.find((s) => s.userId === userId);
 
-    if (!existingSocket) {
-      this.gameRoomConnections.set(
-        gameId,
-        [...gameRoomSockets, { userId, socketId, isSpectator }],
-      );
-    } else {
-      throw new Error('User is already in game room...');
+    if (existingSocket) {
+      throw new Error('User is already in game room... on {addUserToGameRoom()}');
     }
+
+    this.gameRoomConnections.set(
+      gameId,
+      [...gameRoomSockets, { userId, socketId, isSpectator }],
+    );
+  }
+
+  public convertSpectatorToPlayer(gameId: number, userId: number, socketId: string) {
+    const gameRoomSockets = this.gameRoomConnections.get(gameId) || [];
+    const currentGameUserSocket = gameRoomSockets.find((s) => s.userId === userId && s.socketId === socketId);
+
+    if (!currentGameUserSocket) {
+      throw new Error(
+        'User is not in game room, unable to convert spectator to player on {convertSpectatorToPlayer()}',
+      );
+    }
+
+    this.gameRoomConnections.set(gameId, gameRoomSockets.map((socket) => ({
+      ...socket,
+      isSpectator: socket.userId === userId ? false : socket.isSpectator,
+    })));
   }
 
   public removeUserFromGameRoom(gameId: number, userId: number) {

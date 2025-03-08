@@ -23,13 +23,13 @@ class SocketService {
     });
   }
 
-  joinGame(payload: { gameId: number, buyIn: number, userId: number, position: number }) {
+  joinGame(payload: { gameId: number, buyIn: number, userId: number, positionId: number }) {
     console.log('JOIN GAME', payload);
     this.socket.emit('GAME_JOIN', {
       gameId: payload.gameId,
       buyIn: payload.buyIn,
       userId: payload.userId,
-      position: payload.position,
+      positionId: payload.positionId,
     });
   }
 
@@ -46,7 +46,6 @@ class SocketService {
   }
 
   listenGameEvents(callback: (event: any) => void) {
-    console.log('IS LISTENING GAME EVENTS', !this.socket.hasListeners('GAME_UPDATE'));
     if (!this.socket.hasListeners('GAME_UPDATE')) {
       this.socket.on('GAME_UPDATE', callback);
 

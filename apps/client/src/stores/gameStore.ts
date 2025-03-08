@@ -85,10 +85,18 @@ export type GameStore = ReturnType<typeof createGameStore>
 export const gameActions = {
   // Use Immer for cleaner state updates
   handleSocketEvent: (store: GameStore, event: any) => {
+    console.log('SOCKET EVENT RECEIVED', event);
+
     switch (event.type) {
       case 'PLAYER_JOINED':
         store.setState(produce(draft => {
-          draft.players.push(event.payload)
+          draft.players.push(event.payload.player)
+          draft.tablePositions.forEach((tablePosition) => {
+            if (tablePosition.id === event.payload.tablePositionId) {
+              tablePosition.playerId = event.payload.player.id;
+              tablePosition.isActive = true;
+            }
+          })
         }))
         break
 

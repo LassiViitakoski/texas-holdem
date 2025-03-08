@@ -2,7 +2,6 @@
 import { useEffect } from 'react'
 import { socketService } from './socket'
 import { GameStore, INITIAL_STATE, gameActions } from '@/stores/gameStore'
-import { produce } from 'immer'
 
 export function initializeGameSocket(gameId: number, userId: number, store: GameStore) {
   useEffect(() => {
@@ -17,9 +16,7 @@ export function initializeGameSocket(gameId: number, userId: number, store: Game
 
     return () => {
       unsubscribe();
-      store.setState(produce(draft => {
-        draft = INITIAL_STATE;
-      }));
+      store.setState(() => INITIAL_STATE);
       socketService.leaveGame(gameId, userId);
     };
   }, [])
