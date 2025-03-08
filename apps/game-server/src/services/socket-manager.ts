@@ -64,7 +64,7 @@ export class SocketManager {
     const sockets = this.gameRoomConnections.get(gameId);
 
     if (sockets) {
-      this.io.to(sockets.map((s) => s.socketId)).emit('game-update', event);
+      this.io.to(sockets.map((s) => s.socketId)).emit('GAME_UPDATE', event);
     }
   }
 
@@ -73,7 +73,7 @@ export class SocketManager {
     const playerSocket = sockets.find((s) => s.userId === userId);
 
     if (playerSocket) {
-      this.io.to(playerSocket.socketId).emit('game-update', event);
+      this.io.to(playerSocket.socketId).emit('GAME_UPDATE', event);
     }
   }
 

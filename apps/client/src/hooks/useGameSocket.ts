@@ -8,6 +8,6 @@ export function useGameSocket(gameId: number) {
     joinGame: (position: number) => socketService.joinGame({ gameId, buyIn: 100, userId: user.id, position }),
     leaveGame: () => socketService.leaveGame(gameId),
     placeBet: (amount: number) => socketService.placeBet(gameId, amount),
-    onGameUpdate: (callback: (event: any) => void) => socketService.onGameUpdate(callback),
+    onGameUpdate: (callback: (event: any) => void) => socketService.listenGameEvents(callback),
   }
 } 

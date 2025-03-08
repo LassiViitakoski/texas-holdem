@@ -6,6 +6,7 @@ import { Card } from '@texas-holdem/shared-types'
 // Define clear, domain-specific types
 export type Player = {
   id: number
+  userId: number
   name: string
   stack: number
   cards: Card[]
@@ -14,37 +15,61 @@ export type Player = {
   hasFolded: boolean
 }
 
-export type GamePhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
+export type RoundPhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
+
+export type BettingRound = {
+  id: number
+}
 
 export type Round = {
   id: number
-  phase: GamePhase
+  phase: RoundPhase
   communityCards: Card[]
   pot: number
-  currentBet: number
   dealerPosition: number
-  currentTurn: number | null
+
+}
+
+export type Blind = {
+  id: number
+  position: number
+  amount: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type TablePosition = {
+  id: number
+  position: number
+  isActive: boolean
+  isDealer: boolean
+  gameId: number
+  playerId: number | null
 }
 
 export interface GameState {
-  gameId: number | null
+  id: number | null
+  blinds: Blind[]
+  maximumPlayers: number
+  minimumPlayers: number
+  chipUnit: string
+  rake: string
   players: Player[]
-  dealerPosition: number
+  tablePositions: TablePosition[]
   activeRound: Round | null
 }
 
-// Initial state as a constant
-const INITIAL_STATE: GameState = {
-  gameId: null,
-  phase: 'waiting',
+// Initial state based on the provided object
+export const INITIAL_STATE: GameState = {
+  id: null,
+  blinds: [],
+  maximumPlayers: 4,
+  minimumPlayers: 2,
+  chipUnit: 'CHIP',
+  rake: '0',
   players: [],
-  communityCards: [],
-  pot: 0,
-  currentBet: 0,
-  dealerPosition: 0,
-  currentTurn: null,
-  isSpectator: false,
-  activeRound: null,
+  tablePositions: [],
+  activeRound: null
 }
 
 // Factory function to create a new store instance
@@ -59,7 +84,7 @@ export type GameStore = ReturnType<typeof createGameStore>
 // Define action creators as pure functions
 export const gameActions = {
   // Use Immer for cleaner state updates
-  updateFromSocketEvent: (store: GameStore, event: any) => {
+  handleSocketEvent: (store: GameStore, event: any) => {
     switch (event.type) {
       case 'PLAYER_JOINED':
         store.setState(produce(draft => {
@@ -84,28 +109,20 @@ export const gameActions = {
         }))
         break
 
-      case 'GAME_ROOM_JOIN_SUCCESS':
+      case 'GAME_ROOM_JOIN_SUCCESS': {
         console.log('GAME_ROOM_JOIN_SUCCESS', event.payload)
         store.setState(produce(draft => {
-          draft.gameId = event.payload.game.id
+          draft.id = event.payload.game.id
+          draft.blinds = event.payload.game.blinds
+          draft.maximumPlayers = event.payload.game.maximumPlayers
+          draft.minimumPlayers = event.payload.game.minimumPlayers
+          draft.chipUnit = event.payload.game.chipUnit
+          draft.rake = event.payload.game.rake
           draft.players = event.payload.game.players
-          draft.activeRound = event.payload.game.activeRound
+          draft.tablePositions = event.payload.game.tablePositions
         }))
         break;
+      }
     }
   },
-
-  setGameId: (store: GameStore, gameId: number) => {
-    store.setState(produce(state => {
-      state.gameId = gameId
-    }))
-  },
-
-  setAsSpectator: (store: GameStore, isSpectator: boolean) => {
-    store.setState(produce(state => {
-      state.isSpectator = isSpectator
-    }))
-  },
-
-  // Other actions...
 }

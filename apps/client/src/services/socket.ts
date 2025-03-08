@@ -15,8 +15,8 @@ class SocketService {
     return this.instance;
   }
 
-  joinGameAsSpectator(payload: { gameId: number, userId: number }) {
-    console.log('JOIN GAME AS SPECTATOR', payload);
+  joinGameRoom(payload: { gameId: number, userId: number }) {
+    console.log('JOIN GAME ROOM', payload);
     this.socket.emit('GAME_ROOM_JOIN', {
       gameId: payload.gameId,
       userId: payload.userId,
@@ -45,11 +45,17 @@ class SocketService {
     this.socket.emit('place-bet', { gameId, amount });
   }
 
-  onGameUpdate(callback: (event: any) => void) {
-    this.socket.on('game-update', callback);
-    return () => {
-      this.socket.off('game-update', callback);
-    };
+  listenGameEvents(callback: (event: any) => void) {
+    console.log('IS LISTENING GAME EVENTS', !this.socket.hasListeners('GAME_UPDATE'));
+    if (!this.socket.hasListeners('GAME_UPDATE')) {
+      this.socket.on('GAME_UPDATE', callback);
+
+      return () => {
+        this.socket.off('GAME_UPDATE', callback);
+      }
+    }
+
+    return () => 0;
   }
 }
 

@@ -91,6 +91,7 @@ export class GameManager {
         new Player({ ...player, username: user.username }),
       ])),
       blinds: blinds.sort((a, b) => a.position - b.position),
+      tablePositions: tablePositions.map((tablePos) => new TablePosition(tablePos)),
     }));
 
     this.initialized = true;

@@ -1,19 +1,17 @@
-import { PlayerPosition } from '@/components/game/PlayerPosition';
+import { TablePosition } from '@/components/game/TablePosition';
 import { Chip } from '@/components/shared';
-import { Player } from '@/types';
 import { CommunityCards } from './CommunityCards';
-import { useGameSocket } from '@/hooks/useGameSocket';
 import { useParams } from '@tanstack/react-router';
 import { BetButton } from './BetButton';
 import { useGameState, useGameActions } from '@/contexts/GameContext';
-import { gameSocketActions } from '@/services/gameSocket';
-import { useLocalStorageUser } from '@/hooks/useUsers';
 
 export const PokerTable = () => {
   console.log('Poker Table Rendering')
   const { gameId } = useParams({ from: '/games/room/$gameId' });
   const gameIdNumeric = parseInt(gameId, 10);
 
+
+  /*
   const players: Player[] = [
     { name: 'You', chips: 1000, cards: [{ suit: 'heart', value: 'A' }, { suit: 'spade', value: 'K' }] },
     { name: 'Player 2', chips: 1500 },
@@ -22,26 +20,28 @@ export const PokerTable = () => {
     { name: 'Player 5', chips: 1200 },
     { name: 'Player 6', chips: 900 },
   ];
-
-  const socket = useGameSocket(gameIdNumeric);
+  */
 
   // Select only the state you need
-  const gameIdState = useGameState(state => state.gameId);
-  const playersState = useGameState(state => state.players);
-  const communityCards = useGameState(state => state.communityCards || []);
-  const isSpectator = useGameState(state => state.isSpectator || false);
+  const tablePositions = useGameState(state => state.tablePositions);
+  const players = useGameState(state => state.players);
+
+
+  console.log('GAME STATE', useGameState(state => state))
+
 
   // Get actions
   const actions = useGameActions();
 
   // Join as player handler
+  /*
   const handleJoinTable = (position: number) => {
     if (!gameIdState) return;
 
     const user = useLocalStorageUser();
     gameSocketActions.joinAsPlayer(gameIdState, user.id, 100, position);
-    actions.setAsSpectator(false);
   }
+    */
 
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
@@ -55,11 +55,11 @@ export const PokerTable = () => {
           <Chip amount={250} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
-          <CommunityCards cards={communityCards} />
-          {isSpectator ? (
+          <CommunityCards cards={[]} />
+          {true ? (
             <button
               type="button"
-              onClick={() => handleJoinTable(0)}
+              onClick={() => () => 0}
               className="px-4 py-2 bg-blue-500 text-white rounded"
             >
               Sit on table
@@ -68,9 +68,12 @@ export const PokerTable = () => {
             <BetButton amount={100} />
           )}
         </div>
-        {playersState.map((player, index) => (
-          <PlayerPosition key={player.id} position={player.position} player={player} isDealer={player.position === 0} />
-        ))}
+        {tablePositions.map((tablePosition, index) => {
+          const positionPlayer = players.find(player => player.id === tablePosition.playerId);
+          return (
+            <TablePosition key={tablePosition.id} position={tablePosition.position} player={positionPlayer} isDealer={tablePosition.position === 0} />
+          )
+        })}
       </div>
     </div>
   );

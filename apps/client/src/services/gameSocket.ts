@@ -1,24 +1,28 @@
 // src/services/gameSocketService.ts
+import { useEffect } from 'react'
 import { socketService } from './socket'
-import { GameStore, gameActions } from '@/stores/gameStore'
+import { GameStore, INITIAL_STATE, gameActions } from '@/stores/gameStore'
+import { produce } from 'immer'
 
 export function initializeGameSocket(gameId: number, userId: number, store: GameStore) {
-  // Set up event listener for game updates
-  const unsubscribe = socketService.onGameUpdate((event) => {
-    gameActions.updateFromSocketEvent(store, event)
-  })
+  useEffect(() => {
+    const unsubscribe = socketService.listenGameEvents((event) => {
+      gameActions.handleSocketEvent(store, event)
+    })
 
-  // Join as spectator
-  socketService.joinGameAsSpectator({
-    gameId,
-    userId,
-  })
+    socketService.joinGameRoom({
+      gameId,
+      userId,
+    })
 
-  // Return cleanup function
-  return () => {
-    unsubscribe();
-    socketService.leaveGame(gameId, userId)
-  }
+    return () => {
+      unsubscribe();
+      store.setState(produce(draft => {
+        draft = INITIAL_STATE;
+      }));
+      socketService.leaveGame(gameId, userId);
+    };
+  }, [])
 }
 
 // Additional game-specific socket methods

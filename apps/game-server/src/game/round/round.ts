@@ -16,6 +16,7 @@ interface RoundProps {
   players: RoundPlayer[];
   deck: Deck;
   game: Game;
+  communityCards?: Card[];
 }
 
 export class Round {
@@ -30,6 +31,8 @@ export class Round {
   public players: Map<number, RoundPlayer>;
 
   public deck: Deck;
+
+  public communityCards: Card[];
 
   private readonly game: Game;
 
@@ -121,6 +124,7 @@ export class Round {
       player.id,
       player,
     ]));
+    this.communityCards = params.communityCards || [];
   }
 
   public emitRoundStarted(gameId: number) {

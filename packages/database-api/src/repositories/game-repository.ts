@@ -107,7 +107,13 @@ export class GameRepository {
   }
 
   async clearRounds() {
-    await this.client.tablePosition.deleteMany();
+    await this.client.tablePosition.updateMany({
+      data: {
+        isActive: false,
+        playerId: null,
+        isDealer: false,
+      },
+    });
     await this.client.bettingRoundPlayerAction.deleteMany();
     await this.client.bettingRoundPlayer.deleteMany();
     await this.client.bettingRound.deleteMany();
