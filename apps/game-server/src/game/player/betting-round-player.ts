@@ -1,9 +1,7 @@
-import { Decimal } from 'decimal.js';
 import { playerRegistry } from '../../services/player-registry';
 
 interface BettingRoundPlayerProps {
   id: number;
-  stack: Decimal;
   position: number;
   hasActed?: boolean;
   hasFolded?: boolean;
@@ -13,8 +11,6 @@ interface BettingRoundPlayerProps {
 export class BettingRoundPlayer {
   public id: number;
 
-  public stack: Decimal;
-
   public position: number;
 
   public hasActed: boolean;
@@ -23,7 +19,6 @@ export class BettingRoundPlayer {
 
   constructor(params: BettingRoundPlayerProps) {
     this.id = params.id;
-    this.stack = params.stack;
     this.position = params.position;
     this.hasActed = params.hasActed || false;
     this.hasFolded = params.hasFolded || false;
@@ -33,7 +28,6 @@ export class BettingRoundPlayer {
   toJSON() {
     return {
       id: this.id,
-      stack: this.stack.toNumber(),
       position: this.position,
       hasActed: this.hasActed,
       hasFolded: this.hasFolded,

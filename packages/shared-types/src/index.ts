@@ -14,6 +14,10 @@ export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '9' | '10' | 'J' | 'Q
 
 export type CardSuit = 'Club' | 'Diamond' | 'Heart' | 'Spade';
 
+export type CardSuitCode = 'c' | 'd' | 'h' | 's';
+
+export type CardNotation = `${CardRank}${CardSuitCode}` | 'N/A';
+
 export type Card = {
   rank: CardRank;
   suit: CardSuit;
@@ -23,11 +27,4 @@ export type Blind<T extends number | Decimal> = {
   id: number;
   position: number;
   amount: T;
-};
-
-export type RoundPlayer<Persisted extends "PERSISTED" | "UNPERSISTED" = "PERSISTED"> = {
-  id: Persisted extends "PERSISTED" ? number : number | undefined;
-  stack: Decimal;
-  playerId: number;
-  cards: Card[];
 };

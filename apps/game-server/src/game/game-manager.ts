@@ -86,10 +86,7 @@ export class GameManager {
       ...gameDetails
     }) => new Game({
       ...gameDetails,
-      players: new Map(players.map(({ user, ...player }) => [
-        player.id,
-        new Player({ ...player, username: user.username }),
-      ])),
+      players: players.map(({ user, ...player }) => new Player({ ...player, username: user.username })),
       blinds: blinds.sort((a, b) => a.position - b.position),
       tablePositions: tablePositions.map((tablePos) => new TablePosition(tablePos)),
     }));
@@ -105,10 +102,7 @@ export class GameManager {
     const game = new Game({
       ...gameDetails,
       tablePositions: tablePositions.map((tPosition) => new TablePosition(tPosition)),
-      players: new Map(players.map(({ user, ...player }) => [
-        player.id,
-        new Player({ ...player, username: user.username }),
-      ])),
+      players: players.map(({ user, ...player }) => new Player({ ...player, username: user.username })),
       blinds: blinds.sort((a, b) => a.position - b.position),
     });
 

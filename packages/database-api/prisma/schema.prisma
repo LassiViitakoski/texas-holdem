@@ -112,7 +112,8 @@ model Round {
 
 model RoundPlayer {
   id                      Int                   @id @default(autoincrement())
-  stack                   Decimal               @map("stack")
+  position                Int
+  initialStack            Decimal               @map("initial_stack")
   isWinner                Boolean               @default(false) @map("is_winner")
   cards                   String[]              // Store as ["Ad", "10c"]
   createdAt               DateTime              @default(now()) @map("created_at")
@@ -146,7 +147,6 @@ model BettingRound {
 
 model BettingRoundPlayer {
   id              Int                     @id @default(autoincrement())
-  stack           Decimal                 @map("stack")
   position        Int                     
   createdAt       DateTime                @default(now()) @map("created_at")
   updatedAt       DateTime                @default(now()) @updatedAt @map("updated_at")

@@ -15,7 +15,7 @@ interface GameConstructorProps {
   minimumPlayers: number;
   chipUnit: ChipUnit;
   rake: Decimal;
-  players: Map<number, Player>;
+  players: Player[];
   tablePositions?: TablePosition[];
 }
 
@@ -32,7 +32,7 @@ export class Game {
 
   public rake: Decimal;
 
-  public players: Map<number, Player>;
+  public players: Player[];
 
   public activeRound?: Round;
 
@@ -58,7 +58,7 @@ export class Game {
       minimumPlayers: this.minimumPlayers,
       chipUnit: this.chipUnit,
       rake: this.rake,
-      players: Array.from(this.players.values()),
+      players: this.players,
       tablePositions: this.tablePositions,
       activeRound: this.activeRound,
     };
@@ -69,12 +69,12 @@ export class Game {
   }
 
   public isReadyToStart() {
-    return this.players.size >= this.minimumPlayers
-      && this.players.size <= this.maximumPlayers;
+    return this.players.length >= this.minimumPlayers
+      && this.players.length <= this.maximumPlayers;
   }
 
   public isFull() {
-    return this.players.size >= this.maximumPlayers;
+    return this.players.length >= this.maximumPlayers;
   }
 
   public isPositionAvailable(positionId: number) {
@@ -83,7 +83,11 @@ export class Game {
   }
 
   public join({ player, positionId }: { player: Player, positionId: number }) {
-    this.players.set(player.id, player);
+    if (this.players.some((p) => p.id === player.id)) {
+      throw new Error('Player already joined the game {Game.join()}');
+    }
+
+    this.players.push(player);
     this.tablePositions = this.tablePositions.map((tablePosition) => {
       if (tablePosition.id === positionId) {
         if (tablePosition.isActive || tablePosition.playerId) {

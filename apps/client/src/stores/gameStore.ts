@@ -1,17 +1,32 @@
 // src/stores/gameStore.ts
 import { Store } from '@tanstack/react-store'
 import { produce } from 'immer' // Optional but recommended for immutable updates
-import type { RoundPhase, Card, PokerAction } from '@texas-holdem/shared-types'
+import type { RoundPhase, Card, PokerAction, CardNotation } from '@texas-holdem/shared-types'
 
-// Define clear, domain-specific types
-export type RoundPlayer = {
+export type User = {
+  id: number
+}
+
+export type Player = {
   id: number
   userId: number
   stack: number
-  roundInitialStack: number
-  roundCards: Card[]
-  roundPosition: number
+  username: string
+}
+
+export type RoundPlayer = {
+  id: number
+  userId: number
+  initialStack: number
+  cards?: CardNotation[]
+}
+
+export type BettingRoundPlayer = {
+  id: number
+  userId: number
+  position: number
   hasFolded: boolean
+  hasActed: boolean
 }
 
 export type BettingRoundActions = {
@@ -19,6 +34,7 @@ export type BettingRoundActions = {
   type: PokerAction
   amount: number
   sequence: number
+  userId: number
 }
 
 export type BettingRound = {
@@ -26,15 +42,18 @@ export type BettingRound = {
   type: RoundPhase
   isFinished: boolean
   actions: BettingRoundActions[]
+  players: BettingRoundPlayer[]
+  activeUserId: number
 }
 
 export type Round = {
   id: number
-  phase: RoundPhase
+  phase: RoundPhase // TODO
+  isFinished: boolean
   communityCards: Card[]
   pot: number
   players: RoundPlayer[]
-  currentTurn: number
+  bettingRounds: BettingRound[]
 }
 
 export type Blind = {
@@ -51,7 +70,7 @@ export type TablePosition = {
   isActive: boolean
   isDealer: boolean
   gameId: number
-  playerId: number | null
+  userId: number | null
 }
 
 export interface GameState {
@@ -100,27 +119,44 @@ export const gameActions = {
           draft.players.push(event.payload.player)
           draft.tablePositions.forEach((tablePosition) => {
             if (tablePosition.id === event.payload.tablePositionId) {
-              tablePosition.playerId = event.payload.player.id;
+              tablePosition.userId = event.payload.player.userId;
               tablePosition.isActive = true;
             }
           })
         }))
         break
 
-      case 'CARDS_DEALT':
-        store.setState(produce(state => {
-          state.players = state.players.map(player =>
-            player.id === event.payload.playerId
-              ? { ...player, cards: event.payload.cards }
-              : player
-          )
+      case 'ROUND_CARDS_DEALT': {
+        const cardsPayload = event.payload as { user: User, cards: CardNotation[] }[];
+        store.setState(produce(draft => {
+          if (!draft.activeRound) {
+            throw new Error('No active round found');
+          }
+
+          console.log({
+            cardsPayloadLength: cardsPayload.length,
+            roundPlayersLength: draft.activeRound.players.length,
+          })
+
+          if (cardsPayload.length !== draft.activeRound.players.length) {
+            throw new Error('Cards length does not match players length');
+          }
+
+          draft.activeRound.players.forEach((player, index) => {
+            if (player.userId !== cardsPayload[index].user.id) {
+              throw new Error('Round player does not match cards payload');
+            }
+
+            draft.activeRound!.players[index].cards = cardsPayload[index].cards;
+          })
         }))
         break
+      }
 
       case 'COMMUNITY_CARDS_UPDATED':
-        store.setState(produce(state => {
-          state.communityCards = event.payload.cards
-          state.phase = event.payload.phase
+        store.setState(produce(draft => {
+          draft.communityCards = event.payload.cards
+          draft.phase = event.payload.phase
         }))
         break
 
@@ -153,9 +189,26 @@ export const gameActions = {
       }
 
       case 'ROUND_STARTED': {
-        const { round } = event.payload;
+        const { round } = event.payload as { round: Round };
         store.setState(produce(draft => {
-
+          draft.activeRound = {
+            id: round.id,
+            isFinished: round.isFinished,
+            pot: round.pot,
+            phase: round.phase, // TODO
+            players: round.players,
+            communityCards: round.communityCards,
+            bettingRounds: round.bettingRounds.map((bettingRound) => {
+              return {
+                id: bettingRound.id,
+                type: bettingRound.type,
+                isFinished: bettingRound.isFinished,
+                actions: bettingRound.actions,
+                players: bettingRound.players,
+                activeUserId: bettingRound.activeUserId,
+              }
+            })
+          }
         }))
       }
     }

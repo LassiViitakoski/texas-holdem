@@ -1,6 +1,7 @@
 import type { RoundPhase } from '@texas-holdem/shared-types';
 import { BettingRoundPlayer } from '../player/betting-round-player';
 import { BettingRoundAction } from './betting-round-action';
+import { playerRegistry } from '../../services/player-registry';
 
 interface BettingRoundProps {
   id: number;
@@ -8,6 +9,7 @@ interface BettingRoundProps {
   isFinished: boolean;
   players: BettingRoundPlayer[];
   actions: BettingRoundAction[];
+  activeBettingRoundPlayerId: number;
 }
 
 export class BettingRound {
@@ -17,16 +19,19 @@ export class BettingRound {
 
   public isFinished: boolean;
 
-  public players: Map<number, BettingRoundPlayer>;
+  public players: BettingRoundPlayer[];
 
   public actions: BettingRoundAction[];
+
+  public activeBettingRoundPlayerId: number;
 
   constructor(params: BettingRoundProps) {
     this.id = params.id;
     this.type = params.type;
     this.isFinished = params.isFinished;
-    this.players = new Map(params.players.map((player) => [player.id, player]));
+    this.players = params.players;
     this.actions = params.actions;
+    this.activeBettingRoundPlayerId = params.activeBettingRoundPlayerId;
   }
 
   public toJSON() {
@@ -34,8 +39,13 @@ export class BettingRound {
       id: this.id,
       type: this.type,
       isFinished: this.isFinished,
-      players: Array.from(this.players.values()),
+      players: this.players,
       actions: this.actions,
+      activeUserId: playerRegistry.getEntityId({
+        fromId: this.activeBettingRoundPlayerId,
+        from: 'bettingRoundPlayer',
+        to: 'user',
+      }),
     };
   }
 }

@@ -1,16 +1,12 @@
 import { Chip, DealerButton, Card } from '@/components/shared';
-import { Card as ICard } from '@texas-holdem/shared-types'
-import { TablePosition as ITablePosition } from '@/stores/gameStore';
+import { Player, TablePosition as ITablePosition, RoundPlayer } from '@/stores/gameStore';
 import { socketService } from '@/services/socket';
 import { useGameState } from '@/contexts/GameContext';
 import { useLocalStorageUser } from '@/hooks/useUsers';
+
 type TablePositionProps = {
   tablePosition: ITablePosition
-  player?: {
-    username: string
-    stack: number
-    cards?: ICard[]
-  }
+  player?: Player & Pick<RoundPlayer, 'cards'>
 }
 
 export const TablePosition = ({ tablePosition, player }: TablePositionProps) => {

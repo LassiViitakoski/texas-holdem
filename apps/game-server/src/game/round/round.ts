@@ -1,5 +1,7 @@
 import { Decimal } from 'decimal.js';
 import { db } from '@texas-holdem/database-api';
+import type { CardNotation } from '@texas-holdem/shared-types';
+import { produce } from 'immer';
 import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
 import { BettingRoundPlayer } from '../player/betting-round-player';
@@ -28,7 +30,7 @@ export class Round {
 
   public bettingRounds: BettingRound[];
 
-  public players: Map<number, RoundPlayer>;
+  public players: RoundPlayer[];
 
   public deck: Deck;
 
@@ -39,10 +41,7 @@ export class Round {
     this.pot = params.pot;
     this.isFinished = params.isFinished;
     this.deck = params.deck;
-    this.players = new Map(params.players.map((player) => [
-      player.id,
-      player,
-    ]));
+    this.players = params.players;
     this.bettingRounds = params.bettingRounds || [];
     this.communityCards = params.communityCards || [];
   }
@@ -52,7 +51,7 @@ export class Round {
       id: this.id,
       pot: this.pot,
       isFinished: this.isFinished,
-      players: Array.from(this.players.values()),
+      players: this.players,
       bettingRounds: this.bettingRounds,
       communityCards: this.communityCards,
     };
@@ -62,17 +61,19 @@ export class Round {
     socketManager.emitGameEvent(gameId, {
       type: 'ROUND_STARTS_SOON',
       payload: {
-        secondsRemaining: 5,
+        secondsRemaining: 2,
       },
     });
 
     setTimeout(() => {
       socketManager.emitGameEvent(gameId, {
         type: 'ROUND_STARTED',
-        payload: this.toJSON(),
+        payload: {
+          round: this.toJSON(),
+        },
       });
 
-      this.players.forEach((rPlayer) => {
+      const eventPayloads = this.players.map((rPlayer) => {
         const userId = playerRegistry.getEntityId({
           fromId: rPlayer.id,
           from: 'roundPlayer',
@@ -83,21 +84,31 @@ export class Round {
           throw new Error('User not found on {handleJoinGame()}');
         }
 
+        return {
+          user: { id: userId },
+          cards: rPlayer.cards.map(() => 'N/A'),
+        };
+      });
+
+      this.players.forEach((rPlayer, index) => {
+        const producedEventPayloads = produce(eventPayloads, (d) => {
+          const draft = d; // Satisfy eslint (no-param-reassign)
+          draft[index].cards = rPlayer.cards.map((card) => card.toString());
+        });
+
         socketManager.emitUserEvent(
           gameId,
-          userId,
+          producedEventPayloads[index].user.id,
           {
             type: 'ROUND_CARDS_DEALT',
-            payload: {
-              cards: rPlayer.cards.map((card) => card.toString()),
-            },
+            payload: producedEventPayloads,
           },
         );
       });
-    }, 5000);
+    }, 2000);
   }
 
-  static async create(game: Game) {
+  static async create(game: Game) { // TODO: Refactor to accept parameters instead of whole game instance
     const deck = new Deck().shuffle();
     const dealerIndex = game.tablePositions.findIndex((tablePosition) => tablePosition.isDealer);
     const dealer = game.tablePositions[dealerIndex];
@@ -113,13 +124,15 @@ export class Round {
     ]
       .filter((tablePosition) => tablePosition.isPositionActive());
 
+    console.log('positionsOrderedForRound', positionsOrderedForRound);
+
     const {
       firstBettingRound, roundPlayers, ...roundDetails
     } = await db.round.create({
       gameId: game.id,
       pot: game.blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
-      players: positionsOrderedForRound.map(({ playerId }) => {
-        const player = game.players.get(playerId!);
+      players: positionsOrderedForRound.map(({ playerId }, index) => {
+        const player = game.players.find((p) => p.id === playerId);
 
         if (!player) {
           throw new Error('Player ID not found on {Round.create()}');
@@ -127,7 +140,8 @@ export class Round {
 
         return {
           id: player.id,
-          stack: player.stack,
+          position: index + 1,
+          initialStack: player.stack,
           playerId: player.id,
           cards: [
             deck.draw().toString(),
@@ -160,12 +174,15 @@ export class Round {
       bettingRounds: [],
       players: roundPlayers.map((roundPlayer) => new RoundPlayer({
         ...roundPlayer,
-        cards: roundPlayer.cards.map((card) => Card.fromString(card)),
+        cards: roundPlayer.cards.map((card) => Card.fromString(card as CardNotation)),
       })),
+      communityCards: roundDetails.communityCards.map((card) => Card.fromString(card as CardNotation)),
     });
 
     const bettingRound = new BettingRound({
       ...firstBettingRound,
+      activeBettingRoundPlayerId: firstBettingRound.players.find((_, index) => !firstBettingRound.actions[index])
+        ?.id || firstBettingRound.players[0].id,
       players: firstBettingRound.players.map((bettingRoundPlayer) => new BettingRoundPlayer({
         ...bettingRoundPlayer,
         hasActed: false,

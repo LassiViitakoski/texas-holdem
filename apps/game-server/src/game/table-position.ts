@@ -1,4 +1,5 @@
 import { db } from '@texas-holdem/database-api';
+import { playerRegistry } from '../services/player-registry';
 
 export type TablePositionProps = {
   id: number;
@@ -39,6 +40,11 @@ export class TablePosition {
       isDealer: this.isDealer,
       gameId: this.gameId,
       playerId: this.playerId || null,
+      userId: this.playerId ? playerRegistry.getEntityId({
+        fromId: this.playerId,
+        from: 'player',
+        to: 'user',
+      }) : null,
     };
   }
 

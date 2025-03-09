@@ -1,4 +1,6 @@
-import type { CardRank, CardSuit } from '@texas-holdem/shared-types';
+import type {
+  CardRank, CardSuit, CardSuitCode, CardNotation,
+} from '@texas-holdem/shared-types';
 
 export class Card {
   public rank: CardRank;
@@ -10,23 +12,23 @@ export class Card {
     this.suit = suit;
   }
 
-  private static readonly suitToCodeMap: Record<CardSuit, string> = {
+  private static readonly suitToCodeMap: Record<CardSuit, CardSuitCode> = {
     Club: 'c',
     Diamond: 'd',
     Heart: 'h',
     Spade: 's',
   };
 
-  private static readonly codeToSuitMap: Record<string, CardSuit> = {
+  private static readonly codeToSuitMap: Record<CardSuitCode, CardSuit> = {
     c: 'Club',
     d: 'Diamond',
     h: 'Heart',
     s: 'Spade',
   };
 
-  public static fromString(card: string) {
+  public static fromString(card: CardNotation) {
     const rank = card.slice(0, -1) as CardRank;
-    const suitCode = card.slice(-1) as keyof typeof Card.codeToSuitMap;
+    const suitCode = card.slice(-1) as CardSuitCode;
     return new Card({ rank, suit: Card.codeToSuitMap[suitCode] });
   }
 

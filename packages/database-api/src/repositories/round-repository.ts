@@ -1,11 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { BettingRoundAction } from '@prisma/client';
-import type { RoundPlayer } from '@texas-holdem/shared-types';
+import type { BettingRoundAction, RoundPlayer } from '@prisma/client';
 
 type CreateRoundData = {
   pot: Decimal;
-  players: (Pick<RoundPlayer, 'stack' | 'playerId'> & { cards: string[] })[];
+  players: (Pick<RoundPlayer, 'initialStack' | 'playerId' | 'position'> & { cards: string[] })[];
   gameId: number;
   actions: Pick<BettingRoundAction, 'sequence' | 'type' | 'amount'>[];
 };
@@ -22,26 +21,16 @@ export class RoundRepository {
           gameId: data.gameId,
           roundPlayers: {
             create: data.players.map(({
-              stack,
-              cards,
-              playerId,
+              initialStack, cards, playerId, position,
             }) => ({
-              playerId,
-              stack,
-              cards,
+              playerId, initialStack, cards, position,
             })),
           },
         },
-        select: {
-          id: true,
-          pot: true,
-          isFinished: true,
+        include: {
           roundPlayers: {
-            select: {
-              id: true,
-              stack: true,
-              playerId: true,
-              cards: true,
+            orderBy: {
+              position: 'asc',
             },
           },
         },
@@ -53,20 +42,21 @@ export class RoundRepository {
           roundId: round.id,
           type: 'PREFLOP',
           players: {
-            create: round.roundPlayers.map((roundPlayer, index) => ({
+            create: round.roundPlayers.map((roundPlayer) => ({
               roundPlayer: { connect: { id: roundPlayer.id } },
-              stack: roundPlayer.stack,
-              position: index + 1,
+              position: roundPlayer.position,
             })),
           },
         },
         include: {
           actions: true,
-          players: true,
+          players: {
+            orderBy: {
+              position: 'asc',
+            },
+          },
         },
       });
-
-      console.log('ACTIONS', data.actions);
 
       const actions = await tx.bettingRoundAction.createManyAndReturn({
         data: data.actions.map((action) => {

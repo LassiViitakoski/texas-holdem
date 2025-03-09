@@ -6,7 +6,6 @@ import { BetButton } from './BetButton';
 import { useGameState, useGameActions } from '@/contexts/GameContext';
 
 export const PokerTable = () => {
-  console.log('Poker Table Rendering')
   const { gameId } = useParams({ from: '/games/room/$gameId' });
   const gameIdNumeric = parseInt(gameId, 10);
 
@@ -25,9 +24,7 @@ export const PokerTable = () => {
   // Select only the state you need
   const tablePositions = useGameState(state => state.tablePositions);
   const players = useGameState(state => state.players);
-
-
-  console.log('GAME STATE', useGameState(state => state))
+  const activeRound = useGameState(state => state.activeRound);
 
 
   // Get actions
@@ -43,6 +40,7 @@ export const PokerTable = () => {
   }
     */
 
+
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
       <div className="relative w-full max-w-4xl aspect-[16/9]">
@@ -51,16 +49,28 @@ export const PokerTable = () => {
           <div className="absolute inset-2 border-2 border-blue-400/30 rounded-[35%]" />
           <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/5 to-black/20" />
         </div>
-        <div className="absolute inset-[15%] flex items-center justify-center -translate-y-6">
-          <Chip amount={250} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-        </div>
+        {activeRound && (
+          <div className="absolute inset-[15%] flex items-center justify-center -translate-y-6">
+            <Chip amount={250} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+        )}
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
           <CommunityCards cards={[]} />
         </div>
         {tablePositions.map((tablePosition) => {
-          const positionPlayer = players.find(player => player.id === tablePosition.playerId);
+          const player = players.find(player => player.userId === tablePosition.userId);
           return (
-            <TablePosition key={tablePosition.id} tablePosition={tablePosition} player={positionPlayer} />
+            <TablePosition
+              key={tablePosition.id}
+              tablePosition={tablePosition}
+              player={
+                player
+                  ? {
+                    ...player,
+                    cards: activeRound?.players.find(player => player.userId === tablePosition.userId)?.cards
+                  }
+                  : undefined
+              } />
           )
         })}
       </div>
