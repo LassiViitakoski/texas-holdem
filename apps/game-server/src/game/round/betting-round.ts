@@ -1,26 +1,41 @@
-import type { BettingRoundType } from '@texas-holdem/shared-types';
-import { BettingRoundPlayer } from './betting-round-player';
+import type { RoundPhase } from '@texas-holdem/shared-types';
+import { BettingRoundPlayer } from '../player/betting-round-player';
+import { BettingRoundAction } from './betting-round-action';
 
 interface BettingRoundProps {
   id: number;
-  type: BettingRoundType;
+  type: RoundPhase;
   isFinished: boolean;
   players: BettingRoundPlayer[];
+  actions: BettingRoundAction[];
 }
 
 export class BettingRound {
   public id: number;
 
-  public type: BettingRoundType;
+  public type: RoundPhase;
 
   public isFinished: boolean;
 
   public players: Map<number, BettingRoundPlayer>;
+
+  public actions: BettingRoundAction[];
 
   constructor(params: BettingRoundProps) {
     this.id = params.id;
     this.type = params.type;
     this.isFinished = params.isFinished;
     this.players = new Map(params.players.map((player) => [player.id, player]));
+    this.actions = params.actions;
+  }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      isFinished: this.isFinished,
+      players: Array.from(this.players.values()),
+      actions: this.actions,
+    };
   }
 }

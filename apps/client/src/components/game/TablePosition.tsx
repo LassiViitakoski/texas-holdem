@@ -7,7 +7,7 @@ import { useLocalStorageUser } from '@/hooks/useUsers';
 type TablePositionProps = {
   tablePosition: ITablePosition
   player?: {
-    name: string
+    username: string
     stack: number
     cards?: ICard[]
   }
@@ -38,10 +38,10 @@ export const TablePosition = ({ tablePosition, player }: TablePositionProps) => 
           <div className="flex flex-col items-center p-2 relative">
             <div className="h-12 w-12 border border-blue-400/50">
               {player && (
-                <img src={`https://api.dicebear.com/6.x/personas/svg?seed=${player?.name || 'N/A'}`} alt={player?.name || 'N/A'} />
+                <img src={`https://api.dicebear.com/6.x/personas/svg?seed=${player?.username || 'N/A'}`} alt={player?.username || 'N/A'} />
               )}
             </div>
-            <p className="mt-1 text-xs font-medium text-white">{player?.name || 'N/A'}</p>
+            <p className="mt-1 text-xs font-medium text-white">{player?.username || 'N/A'}</p>
             <Chip amount={player?.stack || 0} className="mt-1" />
             {player?.cards && (
               <div className="flex space-x-0.5">

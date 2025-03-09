@@ -1,14 +1,13 @@
 import { Decimal } from 'decimal.js';
-import { BettingRoundPlayerAction } from './betting-round-player-action';
+import { playerRegistry } from '../../services/player-registry';
 
 interface BettingRoundPlayerProps {
   id: number;
   stack: Decimal;
   position: number;
-  roundPlayerId: number;
   hasActed?: boolean;
   hasFolded?: boolean;
-  actions: BettingRoundPlayerAction[];
+  roundPlayerId: number;
 }
 
 export class BettingRoundPlayer {
@@ -18,21 +17,31 @@ export class BettingRoundPlayer {
 
   public position: number;
 
-  public roundPlayerId: number;
-
   public hasActed: boolean;
 
   public hasFolded: boolean;
-
-  public actions: BettingRoundPlayerAction[];
 
   constructor(params: BettingRoundPlayerProps) {
     this.id = params.id;
     this.stack = params.stack;
     this.position = params.position;
-    this.roundPlayerId = params.roundPlayerId;
-    this.actions = params.actions;
     this.hasActed = params.hasActed || false;
     this.hasFolded = params.hasFolded || false;
+    playerRegistry.registerBettingRoundPlayer(this.id, params.roundPlayerId);
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      stack: this.stack.toNumber(),
+      position: this.position,
+      hasActed: this.hasActed,
+      hasFolded: this.hasFolded,
+      userId: playerRegistry.getEntityId({
+        fromId: this.id,
+        from: 'bettingRoundPlayer',
+        to: 'user',
+      }),
+    };
   }
 }

@@ -139,6 +139,7 @@ model BettingRound {
   roundId     Int                   @map("round_id")
   
   players     BettingRoundPlayer[]
+  actions     BettingRoundAction[]
 
   @@map("betting_round")
 }
@@ -156,23 +157,26 @@ model BettingRoundPlayer {
   roundPlayer     RoundPlayer             @relation(fields: [roundPlayerId], references: [id])
   roundPlayerId   Int                     @map("round_player_id")
 
-  actions         BettingRoundPlayerAction[]
+  actions         BettingRoundAction[]
 
   @@map("betting_round_player")
 }
 
-model BettingRoundPlayerAction {
+model BettingRoundAction {
   id              Int                           @id @default(autoincrement())
   sequence        Int                     
-  type            BettingRoundPlayerActionType
+  type            PokerAction
   amount          Decimal                       @default(0.00) @map("amount")
   createdAt       DateTime                      @default(now()) @map("created_at")
   updatedAt       DateTime                      @default(now()) @updatedAt @map("updated_at")
   
+  bettingRound    BettingRound                  @relation(fields: [bettingRoundId], references: [id])
+  bettingRoundId   Int                           @map("betting_round_id")
+
   bettingRoundPlayer    BettingRoundPlayer      @relation(fields: [bettingRoundPlayerId], references: [id])
   bettingRoundPlayerId  Int                     @map("betting_round_player_id")
 
-  @@map("betting_round_player_action")
+  @@map("betting_round_action")
 }
 
 model TablePosition {
@@ -233,12 +237,12 @@ enum BettingRoundType {
   @@map("BETTING_ROUND")
 }
 
-enum BettingRoundPlayerActionType {
+enum PokerAction {
   BLIND
   CALL
   CHECK
   FOLD
   RAISE
 
-  @@map("BETTING_ROUND_PLAYER_ACTION")
+  @@map("POKER_ACTION")
 }

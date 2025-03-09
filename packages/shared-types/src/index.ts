@@ -6,9 +6,9 @@ export type GameStatus = 'WAITING' | 'ROUND_IN_PROGRESS' | 'INACTIVE';
 
 export type ChipUnit = 'CHIP' | 'CASH';
 
-export type BettingRoundType = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER';
+export type RoundPhase = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN';
 
-export type BettingRoundPlayerActionType = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
+export type PokerAction = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
 
 export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 

@@ -1,4 +1,5 @@
 import { Decimal } from 'decimal.js';
+import { playerRegistry } from '../../services/player-registry';
 
 interface PlayerProps {
   id: number;
@@ -10,23 +11,25 @@ interface PlayerProps {
 export class Player {
   public id: number;
 
-  public userId: number;
-
   public username: string;
 
   public stack: Decimal;
 
   constructor(params: PlayerProps) {
     this.id = params.id;
-    this.userId = params.userId;
     this.username = params.username;
     this.stack = params.stack;
+    playerRegistry.registerPlayer(this.id, params.userId);
   }
 
   toJSON() {
     return {
       id: this.id,
-      userId: this.userId,
+      userId: playerRegistry.getEntityId({
+        fromId: this.id,
+        from: 'player',
+        to: 'user',
+      }),
       username: this.username,
       stack: this.stack.toNumber(),
     };

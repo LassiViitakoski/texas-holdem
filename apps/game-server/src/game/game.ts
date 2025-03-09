@@ -4,8 +4,9 @@ import type {
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
 import { Round } from './round';
-import { Player } from './player';
+import { Player } from './player/player';
 import { TablePosition } from './table-position';
+import { socketManager } from '../services/socket-manager';
 
 interface GameConstructorProps {
   id: number;
@@ -52,7 +53,7 @@ export class Game {
   public toJSON() {
     return {
       id: this.id,
-      blinds: this.blinds,
+      blinds: this.blinds.map((blind) => ({ ...blind, amount: blind.amount.toNumber() })),
       maximumPlayers: this.maximumPlayers,
       minimumPlayers: this.minimumPlayers,
       chipUnit: this.chipUnit,
@@ -60,7 +61,6 @@ export class Game {
       players: Array.from(this.players.values()),
       tablePositions: this.tablePositions,
       activeRound: this.activeRound,
-
     };
   }
 
@@ -79,9 +79,7 @@ export class Game {
 
   public isPositionAvailable(positionId: number) {
     const tablePositionIndex = this.tablePositions.findIndex((pos) => pos.id === positionId);
-    return tablePositionIndex !== -1
-      && !this.tablePositions[tablePositionIndex].isActive
-      && !this.tablePositions[tablePositionIndex].playerId;
+    return tablePositionIndex !== -1 && this.tablePositions[tablePositionIndex].isPositionAvailable();
   }
 
   public join({ player, positionId }: { player: Player, positionId: number }) {
@@ -92,7 +90,8 @@ export class Game {
           throw new Error('Table position is not available {Game.join()}');
         }
 
-        return { ...tablePosition, playerId: player.id } as TablePosition;
+        tablePosition.activatePosition(player.id);
+        return tablePosition;
       }
 
       return tablePosition;
@@ -100,11 +99,10 @@ export class Game {
   }
 
   public async rotateDealer() {
-    const currentDealerTablePosition = this.tablePositions.find((pos) => pos.isDealer);
-
-    const newDealerTablePosition = (() => {
-      if (!currentDealerTablePosition) {
-        const activePositions = this.tablePositions.filter((pos) => pos.isActive);
+    const tablePosDealer = this.tablePositions.find((tablePos) => tablePos.isDealer);
+    const tablePosDealerNew = (() => {
+      if (!tablePosDealer) {
+        const activePositions = this.tablePositions.filter((tablePos) => tablePos.isPositionActive());
 
         if (activePositions.length === 0) {
           throw new Error('No active positions found {Game.rotateDealer()}.');
@@ -114,20 +112,19 @@ export class Game {
       }
 
       return this.tablePositions.find((tablePos) => (
-        tablePos.position > currentDealerTablePosition.position && tablePos.isActive
+        tablePos.position > tablePosDealer.position && tablePos.isActive
       ))
           || this.tablePositions.find((tablePos) => (
-            tablePos.position < currentDealerTablePosition.position && tablePos.isActive
+            tablePos.position < tablePosDealer.position && tablePos.isActive
           ))
           || (() => { throw new Error('No new dealer found {Game.rotateDealer()}.'); })();
     })();
 
-    if (currentDealerTablePosition) {
-      await currentDealerTablePosition.removeDealer();
+    if (tablePosDealer) {
+      await tablePosDealer.removeDealer();
     }
 
-    await newDealerTablePosition.setAsDealer();
-    return newDealerTablePosition;
+    return tablePosDealerNew.setAsDealer();
   }
 
   public async initiateNewRound() {
@@ -135,9 +132,17 @@ export class Game {
       throw new Error('Round already ongoing.');
     }
 
-    await this.rotateDealer();
+    const dealerTablePosition = await this.rotateDealer();
+
+    socketManager.emitGameEvent(this.id, {
+      type: 'DEALER_ROTATED',
+      payload: {
+        tablePositionDealer: dealerTablePosition.toJSON(),
+      },
+    });
+
     this.activeRound = await Round.create(this);
-    this.activeRound.emitRoundStarted(this.id);
+    this.activeRound.informRoundStarted(this.id);
     return this.activeRound as Round;
   }
 }

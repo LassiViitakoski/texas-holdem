@@ -46,15 +46,6 @@ export const PokerTable = () => {
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
       <div className="relative w-full max-w-4xl aspect-[16/9]">
-        <div className="absolute -top-20 left-1/2 -translate-x-1/2" >
-          <button
-            type="button"
-            onClick={() => () => 0}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Sit on table
-          </button>
-        </div>
         <div className="absolute inset-0 bg-emerald-800 rounded-[35%] shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-[url('/felt-texture.png')] opacity-20 mix-blend-multiply" />
           <div className="absolute inset-2 border-2 border-blue-400/30 rounded-[35%]" />
@@ -66,7 +57,7 @@ export const PokerTable = () => {
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
           <CommunityCards cards={[]} />
         </div>
-        {tablePositions.map((tablePosition, index) => {
+        {tablePositions.map((tablePosition) => {
           const positionPlayer = players.find(player => player.id === tablePosition.playerId);
           return (
             <TablePosition key={tablePosition.id} tablePosition={tablePosition} player={positionPlayer} />

@@ -1,7 +1,7 @@
 import { db } from '@texas-holdem/database-api';
 import { z } from 'zod';
 import { Game } from './game';
-import { Player } from './player';
+import { Player } from './player/player';
 import type { EventHandlerMap } from '../types';
 import { socketManager } from '../services/socket-manager';
 import { TablePosition } from './table-position';
@@ -149,7 +149,6 @@ export class GameManager {
     });
 
     socketManager.convertSpectatorToPlayer(gameId, userId, socketId);
-
     socketManager.emitGameEvent(gameId, {
       type: 'PLAYER_JOINED',
       payload: {

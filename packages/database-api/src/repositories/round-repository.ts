@@ -1,13 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { BettingRoundPlayerAction } from '@prisma/client';
+import type { BettingRoundAction } from '@prisma/client';
 import type { RoundPlayer } from '@texas-holdem/shared-types';
 
 type CreateRoundData = {
   pot: Decimal;
   players: (Pick<RoundPlayer, 'stack' | 'playerId'> & { cards: string[] })[];
   gameId: number;
-  actions: Omit<BettingRoundPlayerAction, 'id' | 'bettingRoundPlayerId' | 'createdAt' | 'updatedAt'>[];
+  actions: Pick<BettingRoundAction, 'sequence' | 'type' | 'amount'>[];
 };
 
 export class RoundRepository {
@@ -57,45 +57,40 @@ export class RoundRepository {
               roundPlayer: { connect: { id: roundPlayer.id } },
               stack: roundPlayer.stack,
               position: index + 1,
-              actions: data.actions[index] ? {
-                create: {
-                  sequence: data.actions[index].sequence,
-                  type: data.actions[index].type,
-                  amount: data.actions[index].amount,
-                },
-              }
-                : undefined,
-
             })),
           },
         },
-        select: {
-          id: true,
-          type: true,
-          isFinished: true,
-          players: {
-            select: {
-              id: true,
-              stack: true,
-              position: true,
-              roundPlayerId: true,
-              actions: {
-                select: {
-                  id: true,
-                  sequence: true,
-                  type: true,
-                  amount: true,
-                  bettingRoundPlayerId: true,
-                },
-              },
-            },
-          },
+        include: {
+          actions: true,
+          players: true,
         },
+      });
+
+      console.log('ACTIONS', data.actions);
+
+      const actions = await tx.bettingRoundAction.createManyAndReturn({
+        data: data.actions.map((action) => {
+          const bettingRoundPlayer = firstBettingRound
+            .players
+            .find((brPlayer) => brPlayer.position === action.sequence);
+
+          if (!bettingRoundPlayer) {
+            throw new Error('Betting round player not found on {RoundRepository.create()}');
+          }
+
+          return {
+            amount: action.amount,
+            sequence: action.sequence,
+            type: action.type,
+            bettingRoundId: firstBettingRound.id,
+            bettingRoundPlayerId: bettingRoundPlayer.id,
+          };
+        }),
       });
 
       return {
         ...round,
-        firstBettingRound,
+        firstBettingRound: { ...firstBettingRound, actions },
       };
     });
   }

@@ -20,7 +20,7 @@ export class TablePosition {
 
   public readonly gameId: number;
 
-  public readonly playerId?: number | null;
+  public playerId?: number | null;
 
   constructor(params: TablePositionProps) {
     this.id = params.id;
@@ -31,6 +31,17 @@ export class TablePosition {
     this.playerId = params.playerId;
   }
 
+  public toJSON() {
+    return {
+      id: this.id,
+      position: this.position,
+      isActive: this.isActive,
+      isDealer: this.isDealer,
+      gameId: this.gameId,
+      playerId: this.playerId || null,
+    };
+  }
+
   public async removeDealer() {
     await db.tablePosition.update(this.id, { isDealer: false });
     this.isDealer = false;
@@ -39,5 +50,19 @@ export class TablePosition {
   public async setAsDealer() {
     await db.tablePosition.update(this.id, { isDealer: true });
     this.isDealer = true;
+    return this;
+  }
+
+  public activatePosition(playerId: number) {
+    this.playerId = playerId;
+    this.isActive = true;
+  }
+
+  public isPositionAvailable() {
+    return !this.isActive && !this.playerId;
+  }
+
+  public isPositionActive() {
+    return this.isActive && !!this.playerId;
   }
 }

@@ -114,7 +114,7 @@ export class GameRepository {
         isDealer: false,
       },
     });
-    await this.client.bettingRoundPlayerAction.deleteMany();
+    await this.client.bettingRoundAction.deleteMany();
     await this.client.bettingRoundPlayer.deleteMany();
     await this.client.bettingRound.deleteMany();
     await this.client.roundPlayer.deleteMany();

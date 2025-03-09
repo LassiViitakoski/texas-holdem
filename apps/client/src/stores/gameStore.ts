@@ -1,24 +1,31 @@
 // src/stores/gameStore.ts
 import { Store } from '@tanstack/react-store'
 import { produce } from 'immer' // Optional but recommended for immutable updates
-import { Card } from '@texas-holdem/shared-types'
+import type { RoundPhase, Card, PokerAction } from '@texas-holdem/shared-types'
 
 // Define clear, domain-specific types
-export type Player = {
+export type RoundPlayer = {
   id: number
   userId: number
-  name: string
   stack: number
-  cards: Card[]
-  position: number
-  isCurrent: boolean
+  roundInitialStack: number
+  roundCards: Card[]
+  roundPosition: number
   hasFolded: boolean
 }
 
-export type RoundPhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
+export type BettingRoundActions = {
+  id: number
+  type: PokerAction
+  amount: number
+  sequence: number
+}
 
 export type BettingRound = {
   id: number
+  type: RoundPhase
+  isFinished: boolean
+  actions: BettingRoundActions[]
 }
 
 export type Round = {
@@ -26,8 +33,8 @@ export type Round = {
   phase: RoundPhase
   communityCards: Card[]
   pot: number
-  dealerPosition: number
-
+  players: RoundPlayer[]
+  currentTurn: number
 }
 
 export type Blind = {
@@ -118,19 +125,39 @@ export const gameActions = {
         break
 
       case 'GAME_ROOM_JOIN_SUCCESS': {
-        console.log('GAME_ROOM_JOIN_SUCCESS', event.payload)
+        const { game } = event.payload;
         store.setState(produce(draft => {
-          draft.id = event.payload.game.id
-          draft.blinds = event.payload.game.blinds
-          draft.maximumPlayers = event.payload.game.maximumPlayers
-          draft.minimumPlayers = event.payload.game.minimumPlayers
-          draft.chipUnit = event.payload.game.chipUnit
-          draft.rake = event.payload.game.rake
-          draft.players = event.payload.game.players
-          draft.tablePositions = event.payload.game.tablePositions
+          draft.id = game.id
+          draft.blinds = game.blinds
+          draft.maximumPlayers = game.maximumPlayers
+          draft.minimumPlayers = game.minimumPlayers
+          draft.chipUnit = game.chipUnit
+          draft.rake = game.rake
+          draft.players = game.players
+          draft.tablePositions = game.tablePositions
         }))
         break;
       }
+
+      case 'DEALER_ROTATED': {
+        const { tablePositionDealer } = event.payload;
+        store.setState(produce(draft => {
+          draft.tablePositions.forEach((tablePosition, index) => {
+            if (tablePosition.id === tablePositionDealer.id) {
+              console.log('UPDATING TABLE POSITION')
+              draft.tablePositions[index] = tablePositionDealer;
+            }
+          })
+        }))
+        break;
+      }
+
+      case 'ROUND_STARTED': {
+        const { round } = event.payload;
+        store.setState(produce(draft => {
+
+        }))
+      }
     }
-  },
+  }
 }

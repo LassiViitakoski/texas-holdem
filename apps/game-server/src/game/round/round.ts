@@ -1,21 +1,21 @@
 import { Decimal } from 'decimal.js';
-import type { RoundPlayer } from '@texas-holdem/shared-types';
 import { db } from '@texas-holdem/database-api';
 import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
-import { BettingRoundPlayer } from './betting-round-player';
-import { BettingRoundPlayerAction } from './betting-round-player-action';
+import { BettingRoundPlayer } from '../player/betting-round-player';
+import { BettingRoundAction } from './betting-round-action';
 import { socketManager } from '../../services/socket-manager';
 import type { Game } from '../game';
+import { RoundPlayer } from '../player/round-player';
+import { playerRegistry } from '../../services/player-registry';
 
 interface RoundProps {
   id: number;
   pot: Decimal;
   isFinished: boolean;
-  bettingRounds: BettingRound[];
   players: RoundPlayer[];
   deck: Deck;
-  game: Game;
+  bettingRounds?: BettingRound[];
   communityCards?: Card[];
 }
 
@@ -34,7 +34,68 @@ export class Round {
 
   public communityCards: Card[];
 
-  private readonly game: Game;
+  constructor(params: RoundProps) {
+    this.id = params.id;
+    this.pot = params.pot;
+    this.isFinished = params.isFinished;
+    this.deck = params.deck;
+    this.players = new Map(params.players.map((player) => [
+      player.id,
+      player,
+    ]));
+    this.bettingRounds = params.bettingRounds || [];
+    this.communityCards = params.communityCards || [];
+  }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      pot: this.pot,
+      isFinished: this.isFinished,
+      players: Array.from(this.players.values()),
+      bettingRounds: this.bettingRounds,
+      communityCards: this.communityCards,
+    };
+  }
+
+  public informRoundStarted(gameId: number) {
+    socketManager.emitGameEvent(gameId, {
+      type: 'ROUND_STARTS_SOON',
+      payload: {
+        secondsRemaining: 5,
+      },
+    });
+
+    setTimeout(() => {
+      socketManager.emitGameEvent(gameId, {
+        type: 'ROUND_STARTED',
+        payload: this.toJSON(),
+      });
+
+      this.players.forEach((rPlayer) => {
+        const userId = playerRegistry.getEntityId({
+          fromId: rPlayer.id,
+          from: 'roundPlayer',
+          to: 'user',
+        });
+
+        if (!userId) {
+          throw new Error('User not found on {handleJoinGame()}');
+        }
+
+        socketManager.emitUserEvent(
+          gameId,
+          userId,
+          {
+            type: 'ROUND_CARDS_DEALT',
+            payload: {
+              cards: rPlayer.cards.map((card) => card.toString()),
+            },
+          },
+        );
+      });
+    }, 5000);
+  }
 
   static async create(game: Game) {
     const deck = new Deck().shuffle();
@@ -50,12 +111,10 @@ export class Round {
       ...game.tablePositions.slice(dealerIndex + 1),
       ...game.tablePositions.slice(0, dealerIndex + 1),
     ]
-      .filter((tablePosition) => tablePosition.isActive);
+      .filter((tablePosition) => tablePosition.isPositionActive());
 
     const {
-      firstBettingRound: firstBettingRoundDetails,
-      roundPlayers: roundPlayersDetails,
-      ...roundDetails
+      firstBettingRound, roundPlayers, ...roundDetails
     } = await db.round.create({
       gameId: game.id,
       pot: game.blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
@@ -79,106 +138,45 @@ export class Round {
       actions: [
         // Reverse blinds in head-to-head games
         ...(game.blinds.length === 2 && positionsOrderedForRound.length === 2
-          ? game.blinds.toReversed()
+          ? (() => {
+            const [smallBlind, bigBlind] = game.blinds;
+            return [
+              { ...bigBlind, position: smallBlind.position },
+              { ...smallBlind, position: bigBlind.position },
+            ];
+          })()
           : game.blinds
         ),
-      ].map((blind, index) => ({
+      ].map((blind) => ({
         type: 'BLIND',
         amount: blind.amount,
-        sequence: index + 1,
+        sequence: blind.position,
       })),
     });
 
-    const bettingRound = new BettingRound({
-      ...firstBettingRoundDetails,
-      players: firstBettingRoundDetails.players.map((bettingRoundPlayer) => new BettingRoundPlayer({
-        ...bettingRoundPlayer,
-        hasActed: false,
-        hasFolded: false,
-        actions: bettingRoundPlayer
-          .actions
-          .map((bettingRoundPlayerAction) => new BettingRoundPlayerAction(bettingRoundPlayerAction)),
-      })),
-    });
-
-    return new Round({
+    const round = new Round({
       ...roundDetails,
       deck,
-      game,
-      bettingRounds: [bettingRound],
-      players: roundPlayersDetails.map((roundPlayer) => ({
+      bettingRounds: [],
+      players: roundPlayers.map((roundPlayer) => new RoundPlayer({
         ...roundPlayer,
         cards: roundPlayer.cards.map((card) => Card.fromString(card)),
       })),
     });
-  }
 
-  constructor(params: RoundProps) {
-    this.id = params.id;
-    this.pot = params.pot;
-    this.isFinished = params.isFinished;
-    this.bettingRounds = params.bettingRounds;
-    this.deck = params.deck;
-    this.game = params.game;
-    this.players = new Map(params.players.map((player) => [
-      player.id,
-      player,
-    ]));
-    this.communityCards = params.communityCards || [];
-  }
-
-  public emitRoundStarted(gameId: number) {
-    const roundPayload = {
-      roundId: this.id,
-      pot: this.pot,
-      isFinished: this.isFinished,
-      roundPlayers: Array.from(this.players.values()).map((roundPlayer) => ({
-        id: roundPlayer.id,
-        playerId: roundPlayer.playerId,
-        stack: roundPlayer.stack,
+    const bettingRound = new BettingRound({
+      ...firstBettingRound,
+      players: firstBettingRound.players.map((bettingRoundPlayer) => new BettingRoundPlayer({
+        ...bettingRoundPlayer,
+        hasActed: false,
+        hasFolded: false,
       })),
-      bettinRounds: this.bettingRounds.map((bettingRound) => ({
-        id: bettingRound.id,
-        isFinished: bettingRound.isFinished,
-        bettingRoundPlayers: Array.from(bettingRound.players.values()).map((bettingRoundPlayer) => ({
-          id: bettingRoundPlayer.id,
-          hasActed: bettingRoundPlayer.hasActed,
-          hasFolded: bettingRoundPlayer.hasFolded,
-          position: bettingRoundPlayer.position,
-          stack: bettingRoundPlayer.stack,
-          actions: bettingRoundPlayer.actions.map((action) => ({
-            id: action.id,
-            type: action.type,
-            amount: action.amount,
-            sequence: action.sequence,
-          })),
-        })),
-      })),
-    };
-
-    socketManager.emitGameEvent(gameId, {
-      type: 'ROUND_STARTED',
-      payload: roundPayload,
+      actions: firstBettingRound
+        .actions
+        .map((action) => new BettingRoundAction(action)),
     });
 
-    this.players.forEach((roundPlayer) => {
-      const playerId = this.players.get(roundPlayer.playerId)?.playerId;
-      const userId = playerId ? this.game.players.get(playerId)?.userId : null;
-
-      if (!userId) {
-        throw new Error('User not found on {handleJoinGame()}');
-      }
-
-      socketManager.emitUserEvent(
-        gameId,
-        userId,
-        {
-          type: 'ROUND_CARDS_DEALT',
-          payload: {
-            cards: roundPlayer.cards,
-          },
-        },
-      );
-    });
+    round.bettingRounds.push(bettingRound);
+    return round;
   }
 }
