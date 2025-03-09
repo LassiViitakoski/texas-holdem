@@ -2,12 +2,14 @@ import { Decimal } from 'decimal.js';
 import { db } from '@texas-holdem/database-api';
 import type { CardNotation } from '@texas-holdem/shared-types';
 import { produce } from 'immer';
+import { SimpleIntervalJob, Task } from 'toad-scheduler';
 import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
 import { BettingRoundAction } from './betting-round-action';
 import { playerRegistry, socketManager } from '../../services';
 import type { Game } from '../game';
 import { RoundPlayer, BettingRoundPlayer } from '../player';
+import { scheduler } from '../../services/scheduler';
 
 interface RoundProps {
   id: number;
@@ -33,6 +35,8 @@ export class Round {
   public deck: Deck;
 
   public communityCards: Card[];
+
+  private actionTimer?: SimpleIntervalJob;
 
   constructor(params: RoundProps) {
     this.id = params.id;
@@ -108,7 +112,54 @@ export class Round {
           },
         );
       });
+
+      this.startActionTimer(this.bettingRounds[0].activeBettingRoundPlayerId, 10);
     }, 2000);
+  }
+
+  private startActionTimer(bettingRoundPlayerId: number, timeoutSeconds: number) {
+    // Cancel any existing timer
+    this.cancelActionTimer();
+
+    const task = new Task(`action-timeout-task-${this.id}`, () => {
+      // Your timeout business logic here
+      this.handleActionTimeout(bettingRoundPlayerId);
+    });
+
+    // Create a one-time job that runs after timeoutSeconds
+    this.actionTimer = new SimpleIntervalJob(
+      { seconds: timeoutSeconds, runImmediately: false },
+      task,
+      {
+        preventOverrun: true,
+        id: `action-timeout-job-${this.id}`,
+      },
+    );
+
+    scheduler.addSimpleIntervalJob(this.actionTimer);
+  }
+
+  private cancelActionTimer() {
+    if (this.actionTimer) {
+      if (this.actionTimer.id) {
+        scheduler.removeById(this.actionTimer.id);
+      }
+
+      this.actionTimer = undefined;
+    }
+  }
+
+  private handleActionTimeout(bettingRoundPlayerId: number) {
+    this.cancelActionTimer();
+
+    console.log('ACTION TIMEOUT', bettingRoundPlayerId);
+    // Implement your timeout logic here
+    // For example: auto-fold or auto-check depending on the situation
+  }
+
+  // Clean up when round ends
+  public finish() {
+    this.cancelActionTimer();
   }
 
   static async create(game: Game) { // TODO: Refactor to accept parameters instead of whole game instance
@@ -126,8 +177,6 @@ export class Round {
       ...game.tablePositions.slice(0, dealerIndex + 1),
     ]
       .filter((tablePosition) => tablePosition.isPositionActive());
-
-    console.log('positionsOrderedForRound', positionsOrderedForRound);
 
     const isHeadsUpGame = game.blinds.length === 2 && positionsOrderedForRound.length === 2;
 
