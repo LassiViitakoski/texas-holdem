@@ -1,7 +1,7 @@
 import type { RoundPhase } from '@texas-holdem/shared-types';
-import { BettingRoundPlayer } from '../player/betting-round-player';
+import { BettingRoundPlayer } from '../player';
 import { BettingRoundAction } from './betting-round-action';
-import { playerRegistry } from '../../services/player-registry';
+import { playerRegistry } from '../../services';
 
 interface BettingRoundProps {
   id: number;

@@ -1,5 +1,5 @@
 import { db } from '@texas-holdem/database-api';
-import { playerRegistry } from '../services/player-registry';
+import { playerRegistry } from '../services';
 
 export type TablePositionProps = {
   id: number;

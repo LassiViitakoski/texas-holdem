@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js';
 import type { PokerAction } from '@texas-holdem/shared-types';
-import { playerRegistry } from '../../services/player-registry';
+import { playerRegistry } from '../../services';
 
 interface BettingRoundActionProps {
   id: number;

@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js';
-import { playerRegistry } from '../../services/player-registry';
+import { playerRegistry } from '../../services';
 
 interface PlayerProps {
   id: number;

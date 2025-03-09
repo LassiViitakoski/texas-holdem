@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 
 export const CreateGameReqBody = Type.Object({
   maximumPlayers: Type.Number({ minimum: 2, maximum: 9 }),
-  blinds: Type.Array(Type.Number({ minimum: 1 }), { minItems: 2 }),
+  blinds: Type.Array(Type.Number({ minimum: 0.1 }), { minItems: 2 }),
   buyIn: Type.Number({ minimum: 1 }),
 });
 

@@ -189,7 +189,7 @@ export const gameActions = {
       }
 
       case 'ROUND_STARTED': {
-        const { round } = event.payload as { round: Round };
+        const { round, update } = event.payload as { round: Round, update: { playerStacks: Record<string, number> } };
         store.setState(produce(draft => {
           draft.activeRound = {
             id: round.id,
@@ -209,6 +209,12 @@ export const gameActions = {
               }
             })
           }
+
+          draft.players.forEach((player, index) => {
+            if (update.playerStacks[player.id]) {
+              draft.players[index].stack = update.playerStacks[player.id];
+            }
+          })
         }))
       }
     }

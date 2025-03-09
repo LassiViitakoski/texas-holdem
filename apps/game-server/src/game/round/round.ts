@@ -4,12 +4,10 @@ import type { CardNotation } from '@texas-holdem/shared-types';
 import { produce } from 'immer';
 import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
-import { BettingRoundPlayer } from '../player/betting-round-player';
 import { BettingRoundAction } from './betting-round-action';
-import { socketManager } from '../../services/socket-manager';
+import { playerRegistry, socketManager } from '../../services';
 import type { Game } from '../game';
-import { RoundPlayer } from '../player/round-player';
-import { playerRegistry } from '../../services/player-registry';
+import { RoundPlayer, BettingRoundPlayer } from '../player';
 
 interface RoundProps {
   id: number;
@@ -49,7 +47,7 @@ export class Round {
   public toJSON() {
     return {
       id: this.id,
-      pot: this.pot,
+      pot: this.pot.toNumber(),
       isFinished: this.isFinished,
       players: this.players,
       bettingRounds: this.bettingRounds,
@@ -57,7 +55,7 @@ export class Round {
     };
   }
 
-  public informRoundStarted(gameId: number) {
+  public informRoundStarted(gameId: number, playerStacks: Record<string, Decimal>) {
     socketManager.emitGameEvent(gameId, {
       type: 'ROUND_STARTS_SOON',
       payload: {
@@ -70,6 +68,11 @@ export class Round {
         type: 'ROUND_STARTED',
         payload: {
           round: this.toJSON(),
+          update: {
+            playerStacks: Object.fromEntries(
+              Object.entries(playerStacks).map(([key, value]) => [key, value.toNumber()]),
+            ),
+          },
         },
       });
 
@@ -126,9 +129,11 @@ export class Round {
 
     console.log('positionsOrderedForRound', positionsOrderedForRound);
 
+    const isHeadsUpGame = game.blinds.length === 2 && positionsOrderedForRound.length === 2;
+
     const {
-      firstBettingRound, roundPlayers, ...roundDetails
-    } = await db.round.create({
+      firstBettingRound, roundPlayers, playerStacks, ...roundDetails
+    } = await db.round.initiate({
       gameId: game.id,
       pot: game.blinds.reduce((acc, blind) => acc.plus(blind.amount), new Decimal(0)),
       players: positionsOrderedForRound.map(({ playerId }, index) => {
@@ -150,9 +155,8 @@ export class Round {
         };
       }),
       actions: [
-        // Reverse blinds in head-to-head games
-        ...(game.blinds.length === 2 && positionsOrderedForRound.length === 2
-          ? (() => {
+        ...(isHeadsUpGame
+          ? (() => { // Reverse blinds in head-to-head games
             const [smallBlind, bigBlind] = game.blinds;
             return [
               { ...bigBlind, position: smallBlind.position },
@@ -179,21 +183,27 @@ export class Round {
       communityCards: roundDetails.communityCards.map((card) => Card.fromString(card as CardNotation)),
     });
 
+    const activeBrPlayerId = firstBettingRound.players.find((_, index) => !firstBettingRound.actions[index])?.id
+      || (
+        isHeadsUpGame
+          ? firstBettingRound.players[1].id // Heads-up games have the dealer acting first in preflop
+          : firstBettingRound.players[0].id
+      );
+
     const bettingRound = new BettingRound({
       ...firstBettingRound,
-      activeBettingRoundPlayerId: firstBettingRound.players.find((_, index) => !firstBettingRound.actions[index])
-        ?.id || firstBettingRound.players[0].id,
+      activeBettingRoundPlayerId: activeBrPlayerId,
+      actions: firstBettingRound.actions.map((action) => new BettingRoundAction(action)),
       players: firstBettingRound.players.map((bettingRoundPlayer) => new BettingRoundPlayer({
-        ...bettingRoundPlayer,
-        hasActed: false,
-        hasFolded: false,
+        ...bettingRoundPlayer, hasActed: false, hasFolded: false,
       })),
-      actions: firstBettingRound
-        .actions
-        .map((action) => new BettingRoundAction(action)),
     });
 
     round.bettingRounds.push(bettingRound);
-    return round;
+
+    return {
+      round,
+      playerStacks,
+    };
   }
 }

@@ -1,9 +1,9 @@
 import { db } from '@texas-holdem/database-api';
 import { z } from 'zod';
 import { Game } from './game';
-import { Player } from './player/player';
+import { Player } from './player';
 import type { EventHandlerMap } from '../types';
-import { socketManager } from '../services/socket-manager';
+import { socketManager } from '../services';
 import { TablePosition } from './table-position';
 
 const schemas = {
@@ -171,11 +171,17 @@ export class GameManager {
 
   public handeGameRoomJoin(socketId: string, payload: z.infer<typeof schemas.gameRoomJoin>) {
     const { gameId, userId } = payload;
+    const game = this.getGame(gameId);
+
+    if (!game) {
+      throw new Error('Game not found on {handeGameRoomJoin()}');
+    }
+
     socketManager.addUserToGameRoom(gameId, userId, socketId, true);
     socketManager.emitUserEvent(gameId, userId, {
       type: 'GAME_ROOM_JOIN_SUCCESS',
       payload: {
-        game: JSON.parse(JSON.stringify(this.getGame(gameId))),
+        game: game.toJSON(),
       },
     });
   }

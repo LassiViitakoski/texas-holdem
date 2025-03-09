@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js';
-import { Card } from '../../models/card';
-import { playerRegistry } from '../../services/player-registry';
+import { Card } from '../../models';
+import { playerRegistry } from '../../services';
 
 interface RoundPlayerProps {
   id: number;

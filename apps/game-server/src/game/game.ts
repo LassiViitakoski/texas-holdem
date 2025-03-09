@@ -4,9 +4,9 @@ import type {
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
 import { Round } from './round';
-import { Player } from './player/player';
+import { Player } from './player';
 import { TablePosition } from './table-position';
-import { socketManager } from '../services/socket-manager';
+import { socketManager } from '../services';
 
 interface GameConstructorProps {
   id: number;
@@ -57,7 +57,7 @@ export class Game {
       maximumPlayers: this.maximumPlayers,
       minimumPlayers: this.minimumPlayers,
       chipUnit: this.chipUnit,
-      rake: this.rake,
+      rake: this.rake.toNumber(),
       players: this.players,
       tablePositions: this.tablePositions,
       activeRound: this.activeRound,
@@ -145,8 +145,16 @@ export class Game {
       },
     });
 
-    this.activeRound = await Round.create(this);
-    this.activeRound.informRoundStarted(this.id);
+    const { round, playerStacks } = await Round.create(this);
+
+    this.players.forEach((player, index) => {
+      if (playerStacks[player.id]) {
+        this.players[index].stack = playerStacks[player.id];
+      }
+    });
+
+    this.activeRound = round;
+    this.activeRound.informRoundStarted(this.id, playerStacks);
     return this.activeRound as Round;
   }
 }

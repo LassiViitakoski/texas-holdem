@@ -1,4 +1,4 @@
-import { playerRegistry } from '../../services/player-registry';
+import { playerRegistry } from '../../services';
 
 interface BettingRoundPlayerProps {
   id: number;

@@ -12,7 +12,7 @@ type CreateRoundData = {
 export class RoundRepository {
   constructor(private client: PrismaClient) {}
 
-  public async create(data: CreateRoundData) {
+  public async initiate(data: CreateRoundData) {
     return this.client.$transaction(async (tx) => {
       // 2. Create round with players
       const round = await tx.round.create({
@@ -78,9 +78,30 @@ export class RoundRepository {
         }),
       });
 
+      // Replace the updateMany with multiple updates in transaction
+      const playerUpdates = await Promise.all(
+        actions.map((action, index) => {
+          const { playerId } = data.players[index];
+          return tx.player.update({
+            where: { id: playerId },
+            data: {
+              stack: {
+                decrement: action.amount,
+              },
+            },
+            select: {
+              id: true,
+              stack: true,
+            },
+          });
+        }),
+      );
+
       return {
         ...round,
         firstBettingRound: { ...firstBettingRound, actions },
+        playerStacks: Object.fromEntries(playerUpdates.map((update) => [update.id, update.stack])),
+
       };
     });
   }
