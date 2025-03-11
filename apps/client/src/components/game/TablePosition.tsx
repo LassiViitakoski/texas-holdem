@@ -17,8 +17,10 @@ export const TablePosition = ({ tablePosition }: TablePositionProps) => {
 
   const player = tablePosition.userId ? game.players.get(tablePosition.userId) : null;
   const roundPlayer = tablePosition.userId ? game.activeRound?.players.get(tablePosition.userId) : null;
-  const { activeBettingRound } = game.activeRound || {}
-
+  const activeBettingRound = game.activeRound?.activeBettingRound;
+  const playerContribution = activeBettingRound?.actions
+    ?.reduce((acc, action) => action.userId === tablePosition.userId ? acc + action.amount : acc, 0)
+    || 0;
 
   const angle = (tablePosition.position * 60 - 90) * (Math.PI / 180);
   const radius = 44; // Percentage of container's width
@@ -46,6 +48,9 @@ export const TablePosition = ({ tablePosition }: TablePositionProps) => {
             </div>
             <p className="mt-1 text-xs font-medium text-white">{player?.username || 'N/A'}</p>
             <Chip amount={player?.stack || 0} className="mt-1" />
+            {playerContribution > 0 && (
+              <Chip amount={playerContribution} className="bg-amber-500/50" size="small" />
+            )}
             {roundPlayer?.cards && (
               <div className="flex space-x-0.5">
                 {roundPlayer.cards.map((card, index) => <Card key={index} card={card} />)}

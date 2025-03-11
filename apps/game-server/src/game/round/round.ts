@@ -2,14 +2,12 @@ import { Decimal } from 'decimal.js';
 import { db } from '@texas-holdem/database-api';
 import type { CardNotation } from '@texas-holdem/shared-types';
 import { produce } from 'immer';
-import { SimpleIntervalJob, Task } from 'toad-scheduler';
 import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
 import { BettingRoundAction } from './betting-round-action';
 import { playerRegistry, socketManager } from '../../services';
 import type { Game } from '../game';
 import { RoundPlayer, BettingRoundPlayer } from '../player';
-import { scheduler } from '../../services/scheduler';
 
 interface RoundProps {
   id: number;
@@ -39,8 +37,6 @@ export class Round {
 
   public communityCards: Card[];
 
-  private playerActionTimer?: SimpleIntervalJob;
-
   constructor(params: RoundProps) {
     this.id = params.id;
     this.pot = params.pot;
@@ -64,6 +60,69 @@ export class Round {
     };
   }
 
+  public async proceedToNextBettingRound(gameId: number) {
+    const { activeBettingRound } = this;
+    const bettingRoundPhases = ['PREFLOP', 'FLOP', 'TURN', 'RIVER'] as const;
+
+    if (!activeBettingRound || activeBettingRound.type === 'RIVER') {
+      throw new Error('No active betting round found on {Round.proceedToNextBettingRound()}');
+    }
+
+    const currentPhaseIndex = bettingRoundPhases.indexOf(activeBettingRound.type);
+    const nextPhase = bettingRoundPhases[currentPhaseIndex + 1];
+
+    const createdBettingRound = await db.service.executeTransaction(async () => {
+      const newBettingRound = await BettingRound.create({
+        type: nextPhase,
+        isFinished: false,
+        players: [],
+        roundId: this.id,
+      });
+
+      const brPlayers = await BettingRoundPlayer.createMany(
+        activeBettingRound.players
+          .filter((brPlayer) => !brPlayer.hasFolded)
+          .map((brPlayer) => ({
+            bettingRoundId: newBettingRound.id,
+            position: brPlayer.position,
+            roundPlayerId: playerRegistry.getEntityId({
+              fromId: brPlayer.id,
+              from: 'bettingRoundPlayer',
+              to: 'roundPlayer',
+            }),
+          })),
+      );
+
+      newBettingRound.addPlayers(brPlayers);
+      newBettingRound.activeBettingRoundPlayerId = brPlayers[0].id;
+
+      const newCommunityCardsCount = nextPhase === 'FLOP'
+        ? 3
+        : 1;
+
+      const newCommunityCards = this.deck.draw(newCommunityCardsCount, true);
+
+      const { communityCards } = await db.round.updateCommunityCards(this.id, newCommunityCards);
+
+      this.communityCards = communityCards.map((card) => Card.fromString(card as CardNotation));
+      this.completedBettingRounds.push(activeBettingRound);
+      this.activeBettingRound = newBettingRound;
+      return newBettingRound;
+    });
+
+    socketManager.emitGameEvent(gameId, {
+      type: 'NEW_BETTING_ROUND_STARTED',
+      payload: {
+        round: {
+          activeBettingRound: createdBettingRound,
+          completedBettingRounds: this.completedBettingRounds,
+          communityCards: this.communityCards,
+        },
+        timeToActSeconds: 15,
+      },
+    });
+  }
+
   public informRoundStarted(gameId: number, playerStacks: Record<string, { userId: number, updatedStack: Decimal }>) {
     socketManager.emitGameEvent(gameId, {
       type: 'ROUND_STARTS_SOON',
@@ -72,148 +131,60 @@ export class Round {
       },
     });
 
-    setTimeout(() => {
-      const payload = {
-        round: {
-          ...this.toJSON(),
-          players: this.players.map((p) => ({
-            ...p.toJSON(),
-            cards: p.cards.map(() => 'N/A'),
-          })), // Initialize player cards as N/A
-        },
-        timeToActSeconds: 10000,
-        update: {
-          playerStacks: Object.values(playerStacks).map(({ userId, updatedStack }) => ({
-            userId,
-            updatedStack: updatedStack.toNumber(),
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const payload = {
+          round: JSON.parse(JSON.stringify({ // Use JSON.parse(JSON.stringify()) to clone the object for now. If we don't do this, immer will freeze some properties of object
+            ...this.toJSON(),
+            players: this.players.map((p) => ({
+              ...p.toJSON(),
+              cards: p.cards.map(() => 'N/A'), // Initialize player cards as N/A
+            })),
           })),
-        },
-      };
-
-      this.players.forEach((rPlayer, rPlayerIndex) => {
-        const userId = playerRegistry.getEntityId({
-          fromId: rPlayer.id,
-          from: 'roundPlayer',
-          to: 'user',
-        });
-
-        if (!userId) {
-          throw new Error('User not found on {handleJoinGame()}');
-        }
-
-        const payloadWithPlayerCards = produce(payload, (d) => {
-          const draft = d; // Satisfy eslint (no-param-reassign)
-          draft.round.players[rPlayerIndex].cards = rPlayer
-            .cards
-            .map((c) => c.toString()); // Update player cards for the player
-        });
-
-        socketManager.emitUserEvent( // TODO: Works for now only for participated players, not for spectators
-          gameId,
-          userId,
-          {
-            type: 'ROUND_STARTED',
-            payload: payloadWithPlayerCards,
-          },
-        );
-      });
-
-      this.startPlayerActionTimer(this.activeBettingRound!.activeBettingRoundPlayerId, 10);
-
-      /*
-      socketManager.emitGameEvent(gameId, {
-        type: 'ROUND_STARTED',
-        payload: {
-          round: this.toJSON(),
+          timeToActSeconds: 15,
           update: {
-            playerStacks: Object.fromEntries(
-              Object.entries(playerStacks).map(([key, value]) => [key, value.toNumber()]),
-            ),
+            playerStacks: Object.values(playerStacks).map(({ userId, updatedStack }) => ({
+              userId,
+              updatedStack: updatedStack.toNumber(),
+            })),
           },
-        },
-      });
-
-      const eventPayloads = this.players.map((rPlayer) => {
-        const userId = playerRegistry.getEntityId({
-          fromId: rPlayer.id,
-          from: 'roundPlayer',
-          to: 'user',
-        });
-
-        if (!userId) {
-          throw new Error('User not found on {handleJoinGame()}');
-        }
-
-        return {
-          user: { id: userId },
-          cards: rPlayer.cards.map(() => 'N/A'),
         };
-      });
 
-      this.players.forEach((rPlayer, index) => {
-        const producedEventPayloads = produce(eventPayloads, (d) => {
-          const draft = d; // Satisfy eslint (no-param-reassign)
-          draft[index].cards = rPlayer.cards.map((card) => card.toString());
-        });
+        this.players.forEach((rPlayer, rPlayerIndex) => {
+          const userId = playerRegistry.getEntityId({
+            fromId: rPlayer.id,
+            from: 'roundPlayer',
+            to: 'user',
+          });
 
-        socketManager.emitUserEvent(
-          gameId,
-          producedEventPayloads[index].user.id,
-          {
-            type: 'ROUND_CARDS_DEALT',
-            payload: {
-              roundCards: producedEventPayloads,
-              timeToActSeconds: 10,
+          if (!userId) {
+            throw new Error('User not found on {handleJoinGame()}');
+          }
+
+          const payloadWithPlayerCards = produce(payload, (d) => {
+            const draft = d; // Satisfy eslint (no-param-reassign)
+            draft.round.players[rPlayerIndex].cards = rPlayer
+              .cards
+              .map((c) => c.toString()); // Update player cards for the player
+          });
+
+          socketManager.emitUserEvent( // TODO: Works for now only for participated players, not for spectators
+            gameId,
+            userId,
+            {
+              type: 'ROUND_STARTED',
+              payload: payloadWithPlayerCards,
             },
-          },
-        );
-      });
-      */
-    }, 2000);
-  }
-
-  private startPlayerActionTimer(bettingRoundPlayerId: number, timeoutSeconds: number) {
-    this.cancelPlayerActionTimer();
-
-    const task = new Task(`action-timeout-task-${this.id}`, () => {
-      // Your timeout business logic here
-      this.handlePlayerActionTimeout(bettingRoundPlayerId);
+          );
+          resolve();
+        });
+      }, 2000);
     });
-
-    // Create a one-time job that runs after timeoutSeconds
-    this.playerActionTimer = new SimpleIntervalJob(
-      { seconds: timeoutSeconds, runImmediately: false },
-      task,
-      {
-        preventOverrun: true,
-        id: `action-timeout-job-${this.id}`,
-      },
-    );
-
-    scheduler.addSimpleIntervalJob(this.playerActionTimer);
   }
 
-  private cancelPlayerActionTimer() {
-    if (this.playerActionTimer) {
-      if (this.playerActionTimer.id) {
-        scheduler.removeById(this.playerActionTimer.id);
-      }
-
-      this.playerActionTimer = undefined;
-    }
-  }
-
-  private handlePlayerActionTimeout(bettingRoundPlayerId: number) {
-    this.cancelPlayerActionTimer();
-
-    console.log('ACTION TIMEOUT', bettingRoundPlayerId);
-    // Implement your timeout logic here
-    // For example: auto-fold or auto-check depending on the situation
-  }
-
-  // Clean up when round ends
-  public finish() {
-    this.cancelPlayerActionTimer();
+  public async addToPot(amount: Decimal) {
+    this.pot = (await db.round.updatePot(this.id, amount)).pot;
+    return this.pot;
   }
 
   static async create(game: Game) { // TODO: Refactor to accept parameters instead of whole game instance
@@ -251,10 +222,7 @@ export class Round {
           position: index + 1,
           initialStack: player.stack,
           playerId: player.id,
-          cards: [
-            deck.draw().toString(),
-            deck.draw().toString(),
-          ],
+          cards: deck.draw(2, true),
         };
       }),
       actions: game.blinds.map((blind) => ({

@@ -16,7 +16,7 @@ export class Card {
     return this.toString();
   }
 
-  public toString() {
+  public toString(): CardNotation {
     return `${this.rank}${Card.suitToCodeMap[this.suit]}`;
   }
 

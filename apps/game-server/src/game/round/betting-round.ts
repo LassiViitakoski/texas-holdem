@@ -11,7 +11,7 @@ interface BettingRoundProps {
   isFinished: boolean;
   players: BettingRoundPlayer[];
   actions: BettingRoundAction[];
-  activeBettingRoundPlayerId: number;
+  activeBettingRoundPlayerId?: number | null;
 }
 
 export class BettingRound {
@@ -25,7 +25,7 @@ export class BettingRound {
 
   public actions: BettingRoundAction[];
 
-  public activeBettingRoundPlayerId: number;
+  public activeBettingRoundPlayerId: number | null;
 
   constructor(params: BettingRoundProps) {
     this.id = params.id;
@@ -33,7 +33,7 @@ export class BettingRound {
     this.isFinished = params.isFinished;
     this.players = params.players;
     this.actions = params.actions;
-    this.activeBettingRoundPlayerId = params.activeBettingRoundPlayerId;
+    this.activeBettingRoundPlayerId = params.activeBettingRoundPlayerId ?? null;
   }
 
   public toJSON() {
@@ -43,12 +43,21 @@ export class BettingRound {
       isFinished: this.isFinished,
       players: this.players,
       actions: this.actions,
-      activeUserId: playerRegistry.getEntityId({
+      activeUserId: this.activeBettingRoundPlayerId ? playerRegistry.getEntityId({
         fromId: this.activeBettingRoundPlayerId,
         from: 'bettingRoundPlayer',
         to: 'user',
-      }),
+      }) : null,
     };
+  }
+
+  public async finish() {
+    await db.bettingRound.update(this.id, {
+      isFinished: true,
+    });
+
+    this.isFinished = true;
+    this.activeBettingRoundPlayerId = null;
   }
 
   public async handlePlayerAction(bettingRoundPlayerId: number, actions: PlayerActionTuple, bigBlindAmount: Decimal) {
@@ -107,15 +116,46 @@ export class BettingRound {
       }
     });
 
-    const isEveryPlayerActed = this.players.every((brPlayer) => !brPlayer.hasFolded || brPlayer.hasActed);
+    return {
+      actions: [firstBettingRoundAction, ...(secondBettingRoundAction ? [secondBettingRoundAction] : [])],
+      totalBet: firstBettingRoundAction.amount.plus(secondBettingRoundAction?.amount ?? 0),
+    };
+  }
 
-    if (isEveryPlayerActed) {
-      this.isFinished = (await db.bettingRound.update(this.id, {
-        isFinished: true,
-      })).isFinished;
+  public async rotateActivePlayer() {
+    const nextPlayerToAct = this.getNextPlayerToAct();
+
+    if (!nextPlayerToAct) {
+      await this.finish();
     }
 
-    return firstBettingRoundAction.amount.plus(secondBettingRoundAction?.amount ?? 0);
+    this.activeBettingRoundPlayerId = nextPlayerToAct;
+    return this.activeBettingRoundPlayerId;
+  }
+
+  private getNextPlayerToAct() {
+    const activeBrPlayerId = this.activeBettingRoundPlayerId;
+
+    if (!activeBrPlayerId) {
+      return this.players.at(0)?.id ?? null;
+    }
+
+    const activeBrPlayer = this.players.find((brPlayer) => brPlayer.id === activeBrPlayerId);
+
+    if (!activeBrPlayer) {
+      throw new Error('Active betting round player not found {BettingRound.getNextPlayerToAct()}');
+    }
+
+    const remainingActivePlayers = this.players.filter((brPlayer) => !brPlayer.hasActed && !brPlayer.hasFolded);
+
+    if (remainingActivePlayers.length === 0) {
+      return null;
+    }
+
+    const nextPlayerToAct = remainingActivePlayers.find((brPlayer) => brPlayer.position > activeBrPlayer.position)
+      || remainingActivePlayers.at(0);
+
+    return nextPlayerToAct!.id;
   }
 
   /**
@@ -169,5 +209,25 @@ export class BettingRound {
         throw new Error('Invalid RAISE action amount {BettingRound.validatePlayerActions()}');
       }
     }
+  }
+
+  public addPlayers(players: BettingRoundPlayer[]) {
+    this.players.push(...players);
+  }
+
+  static async create(params: Pick<BettingRound, 'type' | 'isFinished' | 'players'> & { roundId: number }) {
+    const creationData = await db.bettingRound.create({
+      type: params.type,
+      isFinished: params.isFinished,
+      roundId: params.roundId,
+    });
+
+    return new BettingRound({
+      id: creationData.id,
+      type: creationData.type,
+      isFinished: creationData.isFinished,
+      players: params.players,
+      actions: [],
+    });
   }
 }

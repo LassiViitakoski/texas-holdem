@@ -12,7 +12,6 @@ export const getUsers = withErrorHandler<typeof UserResponse[]>()(async (
   reply,
 ) => {
   const users = await db.user.findAll();
-  console.log('users', users);
   return reply.code(200).send(users);
 });
 

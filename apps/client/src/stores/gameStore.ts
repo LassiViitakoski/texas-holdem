@@ -51,7 +51,6 @@ export type BettingRound = {
 
 export type Round = {
   id: number
-  phase: RoundPhase // TODO
   isFinished: boolean
   communityCards: Card[]
   pot: number
@@ -129,8 +128,10 @@ export const gameActions: GameActions = {
   },
   handlePlayerActionTimeout: (store) => {
     store.setState(produce(draft => {
-      if (draft.activeRound?.activeBettingRound) {
-        draft.activeRound!.activeBettingRound.actionTimeout = true;
+      const activeBettingRound = draft.activeRound?.activeBettingRound;
+
+      if (activeBettingRound) {
+        activeBettingRound.actionTimeout = true;
       }
     }))
   },
@@ -191,7 +192,6 @@ export const gameActions: GameActions = {
             id: round.id,
             isFinished: round.isFinished,
             pot: round.pot,
-            phase: round.phase, // TODO
             players: new Map(round.players.map((rPlayer: any) => [rPlayer.userId, rPlayer])),
             communityCards: round.communityCards,
             completedBettingRounds: [],
@@ -220,6 +220,68 @@ export const gameActions: GameActions = {
             })
 
           })
+        }))
+        break;
+      }
+
+      case 'NEW_BETTING_ROUND_STARTED': {
+        const { round, timeToActSeconds } = event.payload as { round: any, timeToActSeconds: number };
+        store.setState(produce(draft => {
+          const { activeRound } = draft;
+          if (!activeRound) {
+            throw new Error('No active round found in {handleSocketEvent}');
+          }
+
+          activeRound.communityCards = round.communityCards;
+          activeRound.completedBettingRounds = round.completedBettingRounds;
+          activeRound.activeBettingRound = {
+            id: round.activeBettingRound.id,
+            type: round.activeBettingRound.type,
+            isFinished: round.activeBettingRound.isFinished,
+            actions: round.activeBettingRound.actions,
+            players: new Map(round.activeBettingRound.players.map((brPlayer: any) => [brPlayer.userId, brPlayer])),
+            activeUserId: round.activeBettingRound.activeUserId,
+            actionTimeout: false,
+            timeToActSeconds: timeToActSeconds,
+          }
+        }))
+        break;
+      }
+
+      case 'PLAYER_ACTION_SUCCESS': {
+        const { actions, update, userId } = event.payload;
+        store.setState(produce(draft => {
+          const { activeRound } = draft;
+          const activeBettingRound = activeRound?.activeBettingRound;
+          const { players } = draft;
+
+          if (!activeBettingRound) {
+            throw new Error('No active betting round found in {handleSocketEvent}');
+          }
+
+          activeBettingRound.actions.push(...actions);
+
+          if ('playerStack' in update) {
+            const player = players.get(userId);
+
+            if (player) {
+              players.set(userId, {
+                ...player,
+                stack: update.playerStack,
+              })
+            }
+          }
+
+          if ('pot' in update) {
+            activeRound.pot = update.pot;
+          }
+
+          activeBettingRound.activeUserId = update.activeUserId;
+          activeBettingRound.actionTimeout = false;
+
+          if ('isBettingRoundFinished' in update) {
+            activeBettingRound.isFinished = update.isBettingRoundFinished;
+          }
         }))
         break;
       }

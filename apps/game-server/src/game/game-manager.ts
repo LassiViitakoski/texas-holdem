@@ -204,7 +204,7 @@ export class GameManager {
       throw new Error('Game not found on {handlePlayerAction()}');
     }
 
-    await game.handlePlayerAction(userId, actions);
+    await game.handlePlayerAction(actions, userId);
   }
 
   public handeGameRoomJoin(socketId: string, payload: z.infer<typeof schemas.gameRoomJoin>) {

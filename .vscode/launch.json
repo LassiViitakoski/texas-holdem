@@ -11,6 +11,28 @@
       "url": "http://localhost:4000",
       "webRoot": "${workspaceFolder}/apps/client",
       "userDataDir": false
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Game Server",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/apps/game-server/src/index.ts",
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--loader",
+        "ts-node/esm",
+        "--experimental-specifier-resolution=node"
+      ],
+      "sourceMaps": true,
+      "preLaunchTask": "tsc: build - apps/game-server/tsconfig.json",
+      "cwd": "${workspaceFolder}/apps/game-server"
     }
   ]
 }

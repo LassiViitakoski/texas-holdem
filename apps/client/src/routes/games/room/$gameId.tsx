@@ -15,9 +15,6 @@ export const Route = createFileRoute('/games/room/$gameId')({
 function GameRouteComponent() {
   // Explicitly type the loader data
   const { gameId } = useLoaderData({ from: '/games/room/$gameId' })
-
-  console.log('gameId', gameId);
-
   const user = useLocalStorageUser();
 
   initializeGameSocket(gameId, user.id);

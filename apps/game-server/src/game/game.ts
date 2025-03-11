@@ -4,10 +4,12 @@ import type {
   PlayerActionTuple,
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
+import { db } from '@texas-holdem/database-api';
+import { SimpleIntervalJob, Task } from 'toad-scheduler';
 import { Round } from './round';
 import { Player } from './player';
 import { TablePosition } from './table-position';
-import { playerRegistry, socketManager } from '../services';
+import { playerRegistry, socketManager, scheduler } from '../services';
 
 interface GameConstructorProps {
   id: number;
@@ -38,6 +40,8 @@ export class Game {
   public activeRound?: Round;
 
   public tablePositions: TablePosition[];
+
+  private playerActionTimer?: SimpleIntervalJob;
 
   constructor(params: GameConstructorProps) {
     this.id = params.id;
@@ -156,39 +160,167 @@ export class Game {
 
     this.activeRound = round;
     this.activeRound.informRoundStarted(this.id, playerStacks);
+
+    if (round.activeBettingRound?.activeBettingRoundPlayerId) {
+      this.startPlayerActionTimer(round.activeBettingRound.activeBettingRoundPlayerId, 17);
+    }
+
     return this.activeRound as Round;
   }
 
-  public async handlePlayerAction(userId: number, actions: PlayerActionTuple) {
-    const activeBettingRound = this.activeRound?.activeBettingRound;
+  public async handlePlayerAction(
+    actions: PlayerActionTuple,
+    userId?: number,
+    bettingRoundPlayerId?: number,
+  ) {
+    const { activeRound } = this;
+    const activeBettingRound = activeRound?.activeBettingRound;
+
+    if (!userId && !bettingRoundPlayerId) {
+      throw new Error('User ID or Betting Round Player ID is required {Game.handlePlayerAction()}');
+    }
 
     if (!activeBettingRound) {
       throw new Error('No active betting round found or active betting round is finished {Game.handlePlayerAction()}');
     }
 
-    const bettingRoundPlayerId = playerRegistry.getEntityId({
-      fromId: userId,
+    const brPlayerId = bettingRoundPlayerId || playerRegistry.getEntityId({
+      fromId: userId!,
       from: 'user',
       to: 'bettingRoundPlayer',
     });
 
-    const totalBet = await activeBettingRound.handlePlayerAction(
-      bettingRoundPlayerId,
-      actions,
-      this.blinds.at(-1)?.amount || new Decimal(0),
-    );
+    const { actions: createdActions, ...updatedValues } = await db.service.executeTransaction(async () => {
+      const {
+        totalBet,
+        actions: bettingRoundActions,
+      } = await activeBettingRound.handlePlayerAction(
+        brPlayerId,
+        actions,
+        this.blinds.at(-1)?.amount || new Decimal(0),
+      );
 
-    if (totalBet.greaterThan(0)) {
       const playerId = playerRegistry.getEntityId({
-        fromId: bettingRoundPlayerId,
+        fromId: brPlayerId,
         from: 'bettingRoundPlayer',
         to: 'player',
       });
+
       const player = this.players.find((p) => p.id === playerId);
 
-      if (player) {
-        await player.deductFromStack(totalBet);
+      if (!player) {
+        throw new Error('Player not found {Game.handlePlayerAction()}');
       }
+
+      const [playerStack, pot] = totalBet.greaterThan(0)
+        ? await Promise.all([
+          player.deductFromStack(totalBet),
+          activeRound.addToPot(totalBet),
+        ])
+        : [];
+
+      return {
+        playerStack,
+        pot,
+        actions: bettingRoundActions,
+      };
+    });
+
+    const activeBrPlayerId = await activeBettingRound.rotateActivePlayer();
+
+    socketManager.emitGameEvent(this.id, {
+      type: 'PLAYER_ACTION_SUCCESS',
+      payload: {
+        userId,
+        actions: createdActions,
+        update: {
+          playerStack: updatedValues.playerStack?.toNumber(),
+          pot: updatedValues.pot?.toNumber(),
+          isBettingRoundFinished: activeBettingRound.isFinished,
+          activeUserId: activeBrPlayerId
+            ? playerRegistry.getEntityId({
+              fromId: activeBrPlayerId,
+              from: 'bettingRoundPlayer',
+              to: 'user',
+            })
+            : null,
+        },
+      },
+    });
+
+    // Initiate new round
+    if (activeBettingRound.isFinished) {
+      if (activeBettingRound.type === 'RIVER') {
+        // COMPLETE ROUND
+        throw new Error('River completion not implemented');
+      }
+
+      const activePlayers = activeBettingRound.players.filter((player) => !player.hasFolded);
+
+      if (activePlayers.length === 1) {
+        // await activeRound.complete();
+
+        throw new Error('One player left socket event not yet implemented');
+      }
+
+      await activeRound.proceedToNextBettingRound(this.id);
     }
+  }
+
+  private startPlayerActionTimer(bettingRoundPlayerId: number, timeoutSeconds: number) {
+    this.cancelPlayerActionTimer();
+
+    const task = new Task(`action-timeout-task-${this.id}`, () => this.handlePlayerActionTimeout(bettingRoundPlayerId));
+
+    // Create a one-time job that runs after timeoutSeconds
+    this.playerActionTimer = new SimpleIntervalJob(
+      { seconds: timeoutSeconds, runImmediately: false },
+      task,
+      {
+        preventOverrun: true,
+        id: `action-timeout-job-${this.id}`,
+      },
+    );
+
+    scheduler.addSimpleIntervalJob(this.playerActionTimer);
+  }
+
+  private cancelPlayerActionTimer() {
+    if (this.playerActionTimer) {
+      if (this.playerActionTimer.id) {
+        scheduler.removeById(this.playerActionTimer.id);
+      }
+
+      this.playerActionTimer = undefined;
+    }
+  }
+
+  private handlePlayerActionTimeout(bettingRoundPlayerId: number) {
+    this.cancelPlayerActionTimer();
+    const activeBettingRound = this.activeRound?.activeBettingRound;
+
+    if (!activeBettingRound) {
+      throw new Error('No active betting round found {Game.handlePlayerActionTimeout()}');
+    }
+
+    const totalRaiseAmount = activeBettingRound.actions.reduce(
+      (acc, action) => (action.type === 'RAISE' ? acc.plus(action.amount) : acc),
+      new Decimal(0),
+    );
+    const requiredTotalContribution = totalRaiseAmount.plus(this.blinds.at(-1)?.amount || new Decimal(0));
+    const playerTotalContribution = activeBettingRound.actions.reduce(
+      (acc, action) => (action.bettingRoundPlayerId === bettingRoundPlayerId ? acc.plus(action.amount) : acc),
+      new Decimal(0),
+    );
+
+    this.handlePlayerAction(
+      [
+        {
+          type: requiredTotalContribution.equals(playerTotalContribution) ? 'CHECK' : 'FOLD',
+        },
+      ],
+      undefined,
+      bettingRoundPlayerId,
+    );
   }
 }

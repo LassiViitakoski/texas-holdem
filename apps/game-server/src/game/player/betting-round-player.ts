@@ -1,3 +1,4 @@
+import { db } from '@texas-holdem/database-api';
 import { playerRegistry } from '../../services';
 
 interface BettingRoundPlayerProps {
@@ -37,5 +38,12 @@ export class BettingRoundPlayer {
         to: 'user',
       }),
     };
+  }
+
+  static async createMany(
+    params: (Pick<BettingRoundPlayerProps, 'position' | 'roundPlayerId'> & { bettingRoundId: number })[],
+  ) {
+    const creationData = await db.bettingRoundPlayer.createMany(params);
+    return creationData.map((brPlayerData) => new BettingRoundPlayer(brPlayerData));
   }
 }

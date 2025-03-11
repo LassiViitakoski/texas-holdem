@@ -3,8 +3,5 @@ import { GameRoomLayout } from '@/components/layout/GameRoomLayout'
 
 export const Route = createFileRoute('/games/room')({
   component: GameRoomLayout,
-  onLeave: () => {
-    console.log('ROOM ROOT LEAVE')
-  }
 })
 

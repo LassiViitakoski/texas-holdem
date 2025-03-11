@@ -131,7 +131,7 @@ model RoundPlayer {
 
 model BettingRound {
   id          Int                   @id @default(autoincrement())
-  type        BettingRoundType
+  type        RoundPhase
   isFinished  Boolean               @default(false) @map("is_finished")
   createdAt   DateTime              @default(now()) @map("created_at")
   updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at")
@@ -228,13 +228,13 @@ enum GameStatus {
   @@map("GAME_STATUS")
 }
 
-enum BettingRoundType {
+enum RoundPhase {
   PREFLOP
   FLOP
   TURN
   RIVER
 
-  @@map("BETTING_ROUND")
+  @@map("ROUND_PHASE")
 }
 
 enum PokerAction {

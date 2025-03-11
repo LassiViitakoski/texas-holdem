@@ -127,4 +127,24 @@ export class RoundRepository {
       };
     });
   }
+
+  public async updatePot(roundId: number, amount: Decimal) {
+    return this.client.round.update({
+      where: { id: roundId },
+      data: { pot: { increment: amount } },
+      select: {
+        pot: true,
+      },
+    });
+  }
+
+  public async updateCommunityCards(roundId: number, newCards: string[]) {
+    return this.client.round.update({
+      where: { id: roundId },
+      data: { communityCards: { push: newCards } },
+      select: {
+        communityCards: true,
+      },
+    });
+  }
 }

@@ -13,8 +13,6 @@ export const getAmountToCall = (userId: number, actions: BettingRoundAction[]) =
     0,
   );
 
-  console.log({ totalRaiseAmount, bigBlindAmount, requiredTotalContribution, playerTotalContribution });
-
   return requiredTotalContribution - playerTotalContribution;
 }
 

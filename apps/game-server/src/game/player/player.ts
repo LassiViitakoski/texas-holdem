@@ -40,5 +40,6 @@ export class Player {
     this.stack = (await db.player.update(this.id, {
       stack: this.stack.minus(amount),
     })).stack;
+    return this.stack;
   }
 }

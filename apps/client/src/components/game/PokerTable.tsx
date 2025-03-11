@@ -21,7 +21,7 @@ export const PokerTable = () => {
           </div>
         )}
         <div className="absolute inset-0 flex items-center justify-center translate-y-6">
-          <CommunityCards cards={[]} />
+          <CommunityCards cards={activeRound?.communityCards || []} />
         </div>
         {tablePositions.map((tablePosition) => {
           return (

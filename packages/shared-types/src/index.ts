@@ -6,7 +6,7 @@ export type GameStatus = 'WAITING' | 'ROUND_IN_PROGRESS' | 'INACTIVE';
 
 export type ChipUnit = 'CHIP' | 'CASH';
 
-export type RoundPhase = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN';
+export type RoundPhase = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER';
 
 export type PokerAction = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
 
