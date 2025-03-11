@@ -58,11 +58,19 @@ export class RoundRepository {
         },
       });
 
+      const isHeadsUpGame = data.players.length === 2 && data.actions.length;
+
       const actions = await tx.bettingRoundAction.createManyAndReturn({
         data: data.actions.map((action) => {
-          const bettingRoundPlayer = firstBettingRound
-            .players
-            .find((brPlayer) => brPlayer.position === action.sequence);
+          const bettingRoundPlayer = isHeadsUpGame
+            ? firstBettingRound
+              .players.find((brPlayer) => (
+                (action.sequence === 1 && brPlayer.position === 2)
+                || (action.sequence === 2 && brPlayer.position === 1)
+              ))
+            : firstBettingRound
+              .players
+              .find((brPlayer) => brPlayer.position === action.sequence);
 
           if (!bettingRoundPlayer) {
             throw new Error('Betting round player not found on {RoundRepository.create()}');
@@ -76,32 +84,46 @@ export class RoundRepository {
             bettingRoundPlayerId: bettingRoundPlayer.id,
           };
         }),
+        include: {
+          bettingRoundPlayer: {
+            include: {
+              roundPlayer: {
+                select: {
+                  playerId: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       // Replace the updateMany with multiple updates in transaction
       const playerUpdates = await Promise.all(
-        actions.map((action, index) => {
-          const { playerId } = data.players[index];
-          return tx.player.update({
-            where: { id: playerId },
-            data: {
-              stack: {
-                decrement: action.amount,
-              },
+        actions.map((action) => tx.player.update({
+          where: { id: action.bettingRoundPlayer.roundPlayer.playerId },
+          data: {
+            stack: {
+              decrement: action.amount,
             },
-            select: {
-              id: true,
-              stack: true,
-            },
-          });
-        }),
+          },
+          select: {
+            id: true,
+            stack: true,
+            userId: true,
+          },
+        })),
       );
 
       return {
         ...round,
         firstBettingRound: { ...firstBettingRound, actions },
-        playerStacks: Object.fromEntries(playerUpdates.map((update) => [update.id, update.stack])),
-
+        playerStacks: Object.fromEntries(playerUpdates.map((update) => [
+          update.id,
+          {
+            userId: update.userId,
+            updatedStack: update.stack,
+          },
+        ])),
       };
     });
   }

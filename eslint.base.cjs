@@ -8,5 +8,9 @@ module.exports = {
     'import/extensions': 'off',
     'max-classes-per-file': 'off',
     '@typescript-eslint/no-useless-constructor': 'off',
-    'max-len': ['error', { 'code': 120 }],
+    'max-len': ['error', {
+        'code': 120,
+        'ignoreComments': false,
+        'ignoreTrailingComments': true,
+    }],
 };

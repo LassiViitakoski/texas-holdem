@@ -12,6 +12,14 @@ export class Card {
     this.suit = suit;
   }
 
+  public toJSON() {
+    return this.toString();
+  }
+
+  public toString() {
+    return `${this.rank}${Card.suitToCodeMap[this.suit]}`;
+  }
+
   private static readonly suitToCodeMap: Record<CardSuit, CardSuitCode> = {
     Club: 'c',
     Diamond: 'd',
@@ -30,9 +38,5 @@ export class Card {
     const rank = card.slice(0, -1) as CardRank;
     const suitCode = card.slice(-1) as CardSuitCode;
     return new Card({ rank, suit: Card.codeToSuitMap[suitCode] });
-  }
-
-  public toString() {
-    return `${this.rank}${Card.suitToCodeMap[this.suit]}`;
   }
 }

@@ -1,7 +1,7 @@
 // src/contexts/GameContext.tsx
 import { createContext, useContext, useRef, ReactNode } from 'react'
 import { useStore } from '@tanstack/react-store'
-import { createGameStore, GameStore, GameState, gameActions } from '@/stores/gameStore'
+import { createGameStore, GameStore, GameState, gameActions, GameActions } from '@/stores/gameStore'
 
 // Context holds both the store and actions
 type GameContextValue = {
@@ -9,12 +9,18 @@ type GameContextValue = {
   actions: typeof gameActions
 }
 
-const GameContext = createContext<GameContextValue | null>(null)
-
-// Provider component with proper typing
 interface GameProviderProps {
   children: ReactNode
 }
+
+// Create a type that transforms GameActions to remove the store parameter
+type BoundGameActions = {
+  [K in keyof GameActions]: GameActions[K] extends (store: GameStore, ...args: infer P) => infer R
+  ? (...args: P) => R
+  : never;
+};
+
+const GameContext = createContext<GameContextValue | null>(null)
 
 export function GameProvider({ children }: GameProviderProps) {
   // Use useRef to ensure the store instance remains stable across renders
@@ -59,7 +65,7 @@ export function useGameState<T>(selector: (state: GameState) => T): T {
 export function useGameActions() {
   const { store, actions } = useGameContext()
 
-  // Return bound action creators
+  // Update the reduce function with proper typing
   return Object.keys(actions).reduce(
     (bound, key) => {
       const actionKey = key as keyof typeof actions;
@@ -68,6 +74,6 @@ export function useGameActions() {
       }) as any;
       return bound;
     },
-    {} as Record<keyof typeof actions, Function>
+    {} as BoundGameActions
   )
 }

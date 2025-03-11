@@ -32,6 +32,7 @@ export class RoundPlayer {
       id: this.id,
       position: this.position,
       initialStack: this.initialStack.toNumber(),
+      cards: this.cards,
       userId: playerRegistry.getEntityId({
         fromId: this.id,
         from: 'roundPlayer',

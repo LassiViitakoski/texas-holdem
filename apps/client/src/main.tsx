@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
+import { enableMapSet } from 'immer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
@@ -7,6 +8,8 @@ import { routeTree } from './routeTree.gen';
 import { Toaster } from 'react-hot-toast';
 
 import '@/css/main.css';
+
+enableMapSet();
 
 const queryClient = new QueryClient({
   defaultOptions: {

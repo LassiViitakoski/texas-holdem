@@ -1,3 +1,4 @@
+import { PlayerAction, PlayerActionTuple } from '@texas-holdem/shared-types';
 import { io, Socket } from 'socket.io-client';
 
 class SocketService {
@@ -25,12 +26,7 @@ class SocketService {
 
   joinGame(payload: { gameId: number, buyIn: number, userId: number, positionId: number }) {
     console.log('JOIN GAME', payload);
-    this.socket.emit('GAME_JOIN', {
-      gameId: payload.gameId,
-      buyIn: payload.buyIn,
-      userId: payload.userId,
-      positionId: payload.positionId,
-    });
+    this.socket.emit('GAME_JOIN', payload);
   }
 
   leaveGame(gameId: number, userId: number) {
@@ -41,8 +37,13 @@ class SocketService {
     });
   }
 
-  placeBet(gameId: number, amount: number) {
-    this.socket.emit('place-bet', { gameId, amount });
+  sendAction(gameId: number, userId: number, actions: PlayerAction | PlayerActionTuple) {
+    console.log('SEND ACTION', actions);
+    this.socket.emit('PLAYER_ACTION', {
+      gameId,
+      userId,
+      actions,
+    });
   }
 
   listenGameEvents(callback: (event: any) => void) {

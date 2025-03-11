@@ -1,12 +1,13 @@
 import type {
   Blind,
   ChipUnit,
+  PlayerActionTuple,
 } from '@texas-holdem/shared-types';
 import { Decimal } from 'decimal.js';
 import { Round } from './round';
 import { Player } from './player';
 import { TablePosition } from './table-position';
-import { socketManager } from '../services';
+import { playerRegistry, socketManager } from '../services';
 
 interface GameConstructorProps {
   id: number;
@@ -149,12 +150,45 @@ export class Game {
 
     this.players.forEach((player, index) => {
       if (playerStacks[player.id]) {
-        this.players[index].stack = playerStacks[player.id];
+        this.players[index].stack = playerStacks[player.id].updatedStack;
       }
     });
 
     this.activeRound = round;
     this.activeRound.informRoundStarted(this.id, playerStacks);
     return this.activeRound as Round;
+  }
+
+  public async handlePlayerAction(userId: number, actions: PlayerActionTuple) {
+    const activeBettingRound = this.activeRound?.activeBettingRound;
+
+    if (!activeBettingRound) {
+      throw new Error('No active betting round found or active betting round is finished {Game.handlePlayerAction()}');
+    }
+
+    const bettingRoundPlayerId = playerRegistry.getEntityId({
+      fromId: userId,
+      from: 'user',
+      to: 'bettingRoundPlayer',
+    });
+
+    const totalBet = await activeBettingRound.handlePlayerAction(
+      bettingRoundPlayerId,
+      actions,
+      this.blinds.at(-1)?.amount || new Decimal(0),
+    );
+
+    if (totalBet.greaterThan(0)) {
+      const playerId = playerRegistry.getEntityId({
+        fromId: bettingRoundPlayerId,
+        from: 'bettingRoundPlayer',
+        to: 'player',
+      });
+      const player = this.players.find((p) => p.id === playerId);
+
+      if (player) {
+        await player.deductFromStack(totalBet);
+      }
+    }
   }
 }

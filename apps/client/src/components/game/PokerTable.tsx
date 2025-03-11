@@ -1,32 +1,11 @@
 import { TablePosition } from '@/components/game/TablePosition';
 import { Chip } from '@/components/shared';
 import { CommunityCards } from './CommunityCards';
-import { useParams } from '@tanstack/react-router';
-import { BetButton } from './BetButton';
-import { useGameState, useGameActions } from '@/contexts/GameContext';
+import { useGameState } from '@/contexts/GameContext';
 
 export const PokerTable = () => {
-  const { gameId } = useParams({ from: '/games/room/$gameId' });
-  const gameIdNumeric = parseInt(gameId, 10);
-
   const tablePositions = useGameState(state => state.tablePositions);
-  const players = useGameState(state => state.players);
   const activeRound = useGameState(state => state.activeRound);
-
-
-  // Get actions
-  const actions = useGameActions();
-
-  // Join as player handler
-  /*
-  const handleJoinTable = (position: number) => {
-    if (!gameIdState) return;
-
-    const user = useLocalStorageUser();
-    gameSocketActions.joinAsPlayer(gameIdState, user.id, 100, position);
-  }
-    */
-
 
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
@@ -45,19 +24,11 @@ export const PokerTable = () => {
           <CommunityCards cards={[]} />
         </div>
         {tablePositions.map((tablePosition) => {
-          const player = players.find(player => player.userId === tablePosition.userId);
           return (
             <TablePosition
               key={tablePosition.id}
               tablePosition={tablePosition}
-              player={
-                player
-                  ? {
-                    ...player,
-                    cards: activeRound?.players.find(player => player.userId === tablePosition.userId)?.cards
-                  }
-                  : undefined
-              } />
+            />
           )
         })}
       </div>

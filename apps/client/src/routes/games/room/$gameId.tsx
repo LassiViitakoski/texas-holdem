@@ -2,11 +2,6 @@ import { createFileRoute, useLoaderData } from '@tanstack/react-router';
 import { PokerTable } from '@/components/game/PokerTable';
 import { initializeGameSocket } from '@/services/gameSocket';
 import { useLocalStorageUser } from '@/hooks/useUsers';
-import { useGameContext, useGameActions } from '@/contexts/GameContext';
-import { useEffect } from 'react';
-import { gameActions } from '@/stores/gameStore';
-import { socketService } from '@/services/socket';
-import { useGameSocket } from '@/hooks/useGameSocket';
 
 export const Route = createFileRoute('/games/room/$gameId')({
   component: GameRouteComponent,
@@ -24,9 +19,8 @@ function GameRouteComponent() {
   console.log('gameId', gameId);
 
   const user = useLocalStorageUser();
-  const { store } = useGameContext();
 
-  initializeGameSocket(gameId, user.id, store);
+  initializeGameSocket(gameId, user.id);
 
   return <PokerTable />;
 }

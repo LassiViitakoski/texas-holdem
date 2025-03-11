@@ -5,6 +5,8 @@ import {
   PlayerRepository,
   UserRepository,
   TablePositionRepository,
+  BettingRoundRepository,
+  BettingRoundActionRepository,
 } from './repositories';
 
 export class DatabaseApi {
@@ -22,6 +24,10 @@ export class DatabaseApi {
 
   public readonly tablePosition: TablePositionRepository;
 
+  public readonly bettingRound: BettingRoundRepository;
+
+  public readonly bettingRoundAction: BettingRoundActionRepository;
+
   private constructor() {
     this.client = new PrismaClient();
     this.user = new UserRepository(this.client);
@@ -29,6 +35,8 @@ export class DatabaseApi {
     this.round = new RoundRepository(this.client);
     this.player = new PlayerRepository(this.client);
     this.tablePosition = new TablePositionRepository(this.client);
+    this.bettingRound = new BettingRoundRepository(this.client);
+    this.bettingRoundAction = new BettingRoundActionRepository(this.client);
   }
 
   public static getInstance(): DatabaseApi {

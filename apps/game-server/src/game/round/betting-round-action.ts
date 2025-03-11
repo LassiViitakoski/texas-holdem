@@ -1,14 +1,17 @@
 import { Decimal } from 'decimal.js';
 import type { PokerAction } from '@texas-holdem/shared-types';
+import { db } from '@texas-holdem/database-api';
 import { playerRegistry } from '../../services';
 
-interface BettingRoundActionProps {
+interface BettingRoundActionParams {
   id: number;
   type: PokerAction;
   sequence: number;
   amount: Decimal;
   bettingRoundPlayerId: number;
 }
+
+type CreationParams = Omit<BettingRoundActionParams, 'id'> & { bettingRoundId: number };
 
 export class BettingRoundAction {
   public id: number;
@@ -21,7 +24,7 @@ export class BettingRoundAction {
 
   public readonly bettingRoundPlayerId: number;
 
-  constructor(params: BettingRoundActionProps) {
+  constructor(params: BettingRoundActionParams) {
     this.id = params.id;
     this.type = params.type;
     this.sequence = params.sequence;
@@ -41,5 +44,13 @@ export class BettingRoundAction {
         to: 'user',
       }),
     };
+  }
+
+  public static async createNormalizedPlayerActions(data: [CreationParams, CreationParams | undefined]) {
+    const creationData = await db.bettingRoundAction.createMany(
+      data.filter((action) => !!action),
+    );
+
+    return creationData.map((action) => new BettingRoundAction(action));
   }
 }

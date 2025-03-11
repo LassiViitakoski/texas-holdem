@@ -1,4 +1,5 @@
 import { Decimal } from 'decimal.js';
+import { db } from '@texas-holdem/database-api';
 import { playerRegistry } from '../../services';
 
 interface PlayerProps {
@@ -33,5 +34,11 @@ export class Player {
       username: this.username,
       stack: this.stack.toNumber(),
     };
+  }
+
+  async deductFromStack(amount: Decimal) {
+    this.stack = (await db.player.update(this.id, {
+      stack: this.stack.minus(amount),
+    })).stack;
   }
 }

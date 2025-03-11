@@ -28,3 +28,10 @@ export type Blind<T extends number | Decimal> = {
   position: number;
   amount: T;
 };
+
+export type PlayerAction = {
+  type: Extract<PokerAction, 'CALL' | 'CHECK' | 'FOLD' | 'RAISE'>;
+  amount?: number;
+}
+
+export type PlayerActionTuple = [PlayerAction] | [PlayerAction, PlayerAction];

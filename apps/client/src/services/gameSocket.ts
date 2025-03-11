@@ -1,13 +1,15 @@
 // src/services/gameSocketService.ts
 import { useEffect } from 'react'
 import { socketService } from './socket'
-import { GameStore, INITIAL_STATE, gameActions } from '@/stores/gameStore'
+import { INITIAL_STATE, } from '@/stores/gameStore'
+import { useGameActions, useGameContext } from '@/contexts/GameContext';
 
-export function initializeGameSocket(gameId: number, userId: number, store: GameStore) {
+export function initializeGameSocket(gameId: number, userId: number) {
+  const actions = useGameActions();
+  const { store } = useGameContext();
+
   useEffect(() => {
-    const unsubscribe = socketService.listenGameEvents((event) => {
-      gameActions.handleSocketEvent(store, event)
-    })
+    const unsubscribe = socketService.listenGameEvents(actions.handleSocketEvent)
 
     socketService.joinGameRoom({
       gameId,
@@ -20,22 +22,4 @@ export function initializeGameSocket(gameId: number, userId: number, store: Game
       socketService.leaveGame(gameId, userId);
     };
   }, [])
-}
-
-// Additional game-specific socket methods
-export const gameSocketActions = {
-  joinAsPlayer: (gameId: number, userId: number, buyIn: number, position: number) => {
-    socketService.joinGame({
-      gameId,
-      userId,
-      buyIn,
-      position,
-    })
-  },
-
-  placeBet: (gameId: number, amount: number) => {
-    socketService.placeBet(gameId, amount)
-  },
-
-  // Other socket actions...
 }

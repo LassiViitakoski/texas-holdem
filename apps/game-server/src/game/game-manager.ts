@@ -21,6 +21,26 @@ const schemas = {
     gameId: z.number(),
     userId: z.number(),
   }),
+  playerAction: z.object({
+    gameId: z.number(),
+    userId: z.number(),
+    actions: z.union([
+      z.tuple([z.object({
+        type: z.enum(['CHECK', 'FOLD', 'CALL']),
+        amount: z.number().optional(),
+      })]),
+      z.tuple([z.object({
+        type: z.enum(['RAISE']),
+        amount: z.number(),
+      })]),
+    ]),
+  }).refine(
+    (data) => (data.actions[0].type !== 'CALL' || (data.actions[0].amount ?? 0) > 0),
+    {
+      message: "Amount is required when action is 'CALL'",
+      path: ['amount'],
+    },
+  ),
 };
 
 export type MessageBrokerGameEvents = {
@@ -49,6 +69,10 @@ export class GameManager {
     GAME_LEAVE: {
       schema: schemas.gameLeave,
       handler: this.handleGameLeave.bind(this),
+    },
+    PLAYER_ACTION: {
+      schema: schemas.playerAction,
+      handler: this.handlePlayerAction.bind(this),
     },
   } as const;
 
@@ -114,6 +138,7 @@ export class GameManager {
       gameId, buyIn, userId, positionId,
     } = payload;
 
+    // Consider using middleware to validate gameId & returning game instance
     const game = this.getGame(gameId);
 
     if (!game) {
@@ -167,6 +192,19 @@ export class GameManager {
     }
 
     await game.initiateNewRound();
+  }
+
+  public async handlePlayerAction(socketId: string, payload: z.infer<typeof schemas.playerAction>) {
+    const {
+      gameId, userId, actions,
+    } = payload;
+    const game = this.getGame(gameId);
+
+    if (!game) {
+      throw new Error('Game not found on {handlePlayerAction()}');
+    }
+
+    await game.handlePlayerAction(userId, actions);
   }
 
   public handeGameRoomJoin(socketId: string, payload: z.infer<typeof schemas.gameRoomJoin>) {

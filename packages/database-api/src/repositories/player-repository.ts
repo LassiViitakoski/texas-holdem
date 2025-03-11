@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Player, PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 interface CreatePlayerParams {
@@ -48,6 +48,13 @@ export class PlayerRepository {
           },
         },
       },
+    });
+  }
+
+  async update(id: number, data: Partial<Player>) {
+    return this.client.player.update({
+      where: { id },
+      data,
     });
   }
 

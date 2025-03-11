@@ -17,7 +17,8 @@ interface RoundProps {
   isFinished: boolean;
   players: RoundPlayer[];
   deck: Deck;
-  bettingRounds?: BettingRound[];
+  activeBettingRound?: BettingRound;
+  completedBettingRounds?: BettingRound[];
   communityCards?: Card[];
 }
 
@@ -28,7 +29,9 @@ export class Round {
 
   public isFinished: boolean;
 
-  public bettingRounds: BettingRound[];
+  public activeBettingRound: BettingRound | null;
+
+  public completedBettingRounds: BettingRound[];
 
   public players: RoundPlayer[];
 
@@ -36,7 +39,7 @@ export class Round {
 
   public communityCards: Card[];
 
-  private actionTimer?: SimpleIntervalJob;
+  private playerActionTimer?: SimpleIntervalJob;
 
   constructor(params: RoundProps) {
     this.id = params.id;
@@ -44,7 +47,8 @@ export class Round {
     this.isFinished = params.isFinished;
     this.deck = params.deck;
     this.players = params.players;
-    this.bettingRounds = params.bettingRounds || [];
+    this.activeBettingRound = params.activeBettingRound || null;
+    this.completedBettingRounds = params.completedBettingRounds || [];
     this.communityCards = params.communityCards || [];
   }
 
@@ -54,12 +58,13 @@ export class Round {
       pot: this.pot.toNumber(),
       isFinished: this.isFinished,
       players: this.players,
-      bettingRounds: this.bettingRounds,
+      activeBettingRound: this.activeBettingRound,
+      completedBettingRounds: this.completedBettingRounds,
       communityCards: this.communityCards,
     };
   }
 
-  public informRoundStarted(gameId: number, playerStacks: Record<string, Decimal>) {
+  public informRoundStarted(gameId: number, playerStacks: Record<string, { userId: number, updatedStack: Decimal }>) {
     socketManager.emitGameEvent(gameId, {
       type: 'ROUND_STARTS_SOON',
       payload: {
@@ -68,6 +73,54 @@ export class Round {
     });
 
     setTimeout(() => {
+      const payload = {
+        round: {
+          ...this.toJSON(),
+          players: this.players.map((p) => ({
+            ...p.toJSON(),
+            cards: p.cards.map(() => 'N/A'),
+          })), // Initialize player cards as N/A
+        },
+        timeToActSeconds: 10000,
+        update: {
+          playerStacks: Object.values(playerStacks).map(({ userId, updatedStack }) => ({
+            userId,
+            updatedStack: updatedStack.toNumber(),
+          })),
+        },
+      };
+
+      this.players.forEach((rPlayer, rPlayerIndex) => {
+        const userId = playerRegistry.getEntityId({
+          fromId: rPlayer.id,
+          from: 'roundPlayer',
+          to: 'user',
+        });
+
+        if (!userId) {
+          throw new Error('User not found on {handleJoinGame()}');
+        }
+
+        const payloadWithPlayerCards = produce(payload, (d) => {
+          const draft = d; // Satisfy eslint (no-param-reassign)
+          draft.round.players[rPlayerIndex].cards = rPlayer
+            .cards
+            .map((c) => c.toString()); // Update player cards for the player
+        });
+
+        socketManager.emitUserEvent( // TODO: Works for now only for participated players, not for spectators
+          gameId,
+          userId,
+          {
+            type: 'ROUND_STARTED',
+            payload: payloadWithPlayerCards,
+          },
+        );
+      });
+
+      this.startPlayerActionTimer(this.activeBettingRound!.activeBettingRoundPlayerId, 10);
+
+      /*
       socketManager.emitGameEvent(gameId, {
         type: 'ROUND_STARTED',
         payload: {
@@ -108,26 +161,27 @@ export class Round {
           producedEventPayloads[index].user.id,
           {
             type: 'ROUND_CARDS_DEALT',
-            payload: producedEventPayloads,
+            payload: {
+              roundCards: producedEventPayloads,
+              timeToActSeconds: 10,
+            },
           },
         );
       });
-
-      this.startActionTimer(this.bettingRounds[0].activeBettingRoundPlayerId, 10);
+      */
     }, 2000);
   }
 
-  private startActionTimer(bettingRoundPlayerId: number, timeoutSeconds: number) {
-    // Cancel any existing timer
-    this.cancelActionTimer();
+  private startPlayerActionTimer(bettingRoundPlayerId: number, timeoutSeconds: number) {
+    this.cancelPlayerActionTimer();
 
     const task = new Task(`action-timeout-task-${this.id}`, () => {
       // Your timeout business logic here
-      this.handleActionTimeout(bettingRoundPlayerId);
+      this.handlePlayerActionTimeout(bettingRoundPlayerId);
     });
 
     // Create a one-time job that runs after timeoutSeconds
-    this.actionTimer = new SimpleIntervalJob(
+    this.playerActionTimer = new SimpleIntervalJob(
       { seconds: timeoutSeconds, runImmediately: false },
       task,
       {
@@ -136,21 +190,21 @@ export class Round {
       },
     );
 
-    scheduler.addSimpleIntervalJob(this.actionTimer);
+    scheduler.addSimpleIntervalJob(this.playerActionTimer);
   }
 
-  private cancelActionTimer() {
-    if (this.actionTimer) {
-      if (this.actionTimer.id) {
-        scheduler.removeById(this.actionTimer.id);
+  private cancelPlayerActionTimer() {
+    if (this.playerActionTimer) {
+      if (this.playerActionTimer.id) {
+        scheduler.removeById(this.playerActionTimer.id);
       }
 
-      this.actionTimer = undefined;
+      this.playerActionTimer = undefined;
     }
   }
 
-  private handleActionTimeout(bettingRoundPlayerId: number) {
-    this.cancelActionTimer();
+  private handlePlayerActionTimeout(bettingRoundPlayerId: number) {
+    this.cancelPlayerActionTimer();
 
     console.log('ACTION TIMEOUT', bettingRoundPlayerId);
     // Implement your timeout logic here
@@ -159,7 +213,7 @@ export class Round {
 
   // Clean up when round ends
   public finish() {
-    this.cancelActionTimer();
+    this.cancelPlayerActionTimer();
   }
 
   static async create(game: Game) { // TODO: Refactor to accept parameters instead of whole game instance
@@ -203,18 +257,7 @@ export class Round {
           ],
         };
       }),
-      actions: [
-        ...(isHeadsUpGame
-          ? (() => { // Reverse blinds in head-to-head games
-            const [smallBlind, bigBlind] = game.blinds;
-            return [
-              { ...bigBlind, position: smallBlind.position },
-              { ...smallBlind, position: bigBlind.position },
-            ];
-          })()
-          : game.blinds
-        ),
-      ].map((blind) => ({
+      actions: game.blinds.map((blind) => ({
         type: 'BLIND',
         amount: blind.amount,
         sequence: blind.position,
@@ -224,7 +267,7 @@ export class Round {
     const round = new Round({
       ...roundDetails,
       deck,
-      bettingRounds: [],
+      completedBettingRounds: [],
       players: roundPlayers.map((roundPlayer) => new RoundPlayer({
         ...roundPlayer,
         cards: roundPlayer.cards.map((card) => Card.fromString(card as CardNotation)),
@@ -248,7 +291,7 @@ export class Round {
       })),
     });
 
-    round.bettingRounds.push(bettingRound);
+    round.activeBettingRound = bettingRound;
 
     return {
       round,

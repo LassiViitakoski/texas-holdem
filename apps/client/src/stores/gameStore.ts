@@ -1,7 +1,8 @@
 // src/stores/gameStore.ts
 import { Store } from '@tanstack/react-store'
 import { produce } from 'immer' // Optional but recommended for immutable updates
-import type { RoundPhase, Card, PokerAction, CardNotation } from '@texas-holdem/shared-types'
+import type { RoundPhase, Card, PokerAction, CardNotation, PlayerAction, PlayerActionTuple } from '@texas-holdem/shared-types'
+import { socketService } from '@/services/socket'
 
 export type User = {
   id: number
@@ -18,7 +19,7 @@ export type RoundPlayer = {
   id: number
   userId: number
   initialStack: number
-  cards?: CardNotation[]
+  cards: CardNotation[]
 }
 
 export type BettingRoundPlayer = {
@@ -29,7 +30,7 @@ export type BettingRoundPlayer = {
   hasActed: boolean
 }
 
-export type BettingRoundActions = {
+export type BettingRoundAction = {
   id: number
   type: PokerAction
   amount: number
@@ -41,9 +42,11 @@ export type BettingRound = {
   id: number
   type: RoundPhase
   isFinished: boolean
-  actions: BettingRoundActions[]
-  players: BettingRoundPlayer[]
+  actions: BettingRoundAction[]
+  players: Map<number, BettingRoundPlayer>
   activeUserId: number
+  actionTimeout: boolean;
+  timeToActSeconds: number
 }
 
 export type Round = {
@@ -52,14 +55,15 @@ export type Round = {
   isFinished: boolean
   communityCards: Card[]
   pot: number
-  players: RoundPlayer[]
-  bettingRounds: BettingRound[]
+  players: Map<number, RoundPlayer>
+  activeBettingRound: BettingRound | null
+  completedBettingRounds: BettingRound[]
 }
 
 export type Blind = {
   id: number
   position: number
-  amount: string
+  amount: number
   createdAt: string
   updatedAt: string
 }
@@ -80,7 +84,7 @@ export interface GameState {
   minimumPlayers: number
   chipUnit: string
   rake: string
-  players: Player[]
+  players: Map<number, Player>
   tablePositions: TablePosition[]
   activeRound: Round | null
 }
@@ -93,7 +97,7 @@ export const INITIAL_STATE: GameState = {
   minimumPlayers: 2,
   chipUnit: 'CHIP',
   rake: '0',
-  players: [],
+  players: new Map(),
   tablePositions: [],
   activeRound: null
 }
@@ -107,16 +111,36 @@ export function createGameStore() {
 // Type for the store instance
 export type GameStore = ReturnType<typeof createGameStore>
 
+export type GameActions = {
+  handleSocketEvent: (store: GameStore, event: any) => void
+  handlePlayerActionTimeout: (store: GameStore) => void
+  handlePlayerAction: (store: GameStore, gameId: number, userId: number, payload: PlayerAction | PlayerActionTuple) => void
+}
+
 // Define action creators as pure functions
-export const gameActions = {
-  // Use Immer for cleaner state updates
-  handleSocketEvent: (store: GameStore, event: any) => {
+export const gameActions: GameActions = {
+  handlePlayerAction: (_, gameId, userId, payload) => {
+    // We could have action validation here
+    socketService.sendAction(
+      gameId,
+      userId,
+      Array.isArray(payload) ? payload : [payload]
+    );
+  },
+  handlePlayerActionTimeout: (store) => {
+    store.setState(produce(draft => {
+      if (draft.activeRound?.activeBettingRound) {
+        draft.activeRound!.activeBettingRound.actionTimeout = true;
+      }
+    }))
+  },
+  handleSocketEvent: (store, event) => {
     console.log('SOCKET EVENT RECEIVED', event);
 
     switch (event.type) {
       case 'PLAYER_JOINED':
         store.setState(produce(draft => {
-          draft.players.push(event.payload.player)
+          draft.players.set(event.payload.player.userId, event.payload.player)
           draft.tablePositions.forEach((tablePosition) => {
             if (tablePosition.id === event.payload.tablePositionId) {
               tablePosition.userId = event.payload.player.userId;
@@ -124,34 +148,7 @@ export const gameActions = {
             }
           })
         }))
-        break
-
-      case 'ROUND_CARDS_DEALT': {
-        const cardsPayload = event.payload as { user: User, cards: CardNotation[] }[];
-        store.setState(produce(draft => {
-          if (!draft.activeRound) {
-            throw new Error('No active round found');
-          }
-
-          console.log({
-            cardsPayloadLength: cardsPayload.length,
-            roundPlayersLength: draft.activeRound.players.length,
-          })
-
-          if (cardsPayload.length !== draft.activeRound.players.length) {
-            throw new Error('Cards length does not match players length');
-          }
-
-          draft.activeRound.players.forEach((player, index) => {
-            if (player.userId !== cardsPayload[index].user.id) {
-              throw new Error('Round player does not match cards payload');
-            }
-
-            draft.activeRound!.players[index].cards = cardsPayload[index].cards;
-          })
-        }))
-        break
-      }
+        break;
 
       case 'COMMUNITY_CARDS_UPDATED':
         store.setState(produce(draft => {
@@ -169,7 +166,7 @@ export const gameActions = {
           draft.minimumPlayers = game.minimumPlayers
           draft.chipUnit = game.chipUnit
           draft.rake = game.rake
-          draft.players = game.players
+          draft.players = new Map(game.players.map((player: any) => [player.userId, player]))
           draft.tablePositions = game.tablePositions
         }))
         break;
@@ -180,7 +177,6 @@ export const gameActions = {
         store.setState(produce(draft => {
           draft.tablePositions.forEach((tablePosition, index) => {
             if (tablePosition.id === tablePositionDealer.id) {
-              console.log('UPDATING TABLE POSITION')
               draft.tablePositions[index] = tablePositionDealer;
             }
           })
@@ -189,33 +185,43 @@ export const gameActions = {
       }
 
       case 'ROUND_STARTED': {
-        const { round, update } = event.payload as { round: Round, update: { playerStacks: Record<string, number> } };
+        const { round, update, timeToActSeconds } = event.payload as { round: any, update: { playerStacks: { userId: number, updatedStack: number }[] }, timeToActSeconds: number };
         store.setState(produce(draft => {
           draft.activeRound = {
             id: round.id,
             isFinished: round.isFinished,
             pot: round.pot,
             phase: round.phase, // TODO
-            players: round.players,
+            players: new Map(round.players.map((rPlayer: any) => [rPlayer.userId, rPlayer])),
             communityCards: round.communityCards,
-            bettingRounds: round.bettingRounds.map((bettingRound) => {
-              return {
-                id: bettingRound.id,
-                type: bettingRound.type,
-                isFinished: bettingRound.isFinished,
-                actions: bettingRound.actions,
-                players: bettingRound.players,
-                activeUserId: bettingRound.activeUserId,
-              }
-            })
+            completedBettingRounds: [],
+            activeBettingRound: {
+              id: round.activeBettingRound.id,
+              type: round.activeBettingRound.type,
+              isFinished: round.activeBettingRound.isFinished,
+              actions: round.activeBettingRound.actions,
+              players: new Map(round.activeBettingRound.players.map((brPlayer: any) => [brPlayer.userId, brPlayer])),
+              activeUserId: round.activeBettingRound.activeUserId,
+              actionTimeout: false,
+              timeToActSeconds: timeToActSeconds,
+            }
           }
 
-          draft.players.forEach((player, index) => {
-            if (update.playerStacks[player.id]) {
-              draft.players[index].stack = update.playerStacks[player.id];
+          update.playerStacks.forEach((playerStack) => {
+            const player = draft.players.get(playerStack.userId);
+
+            if (!player) {
+              throw new Error(`Stack update for non-existent player ${playerStack.userId} in {handleSocketEvent}`);
             }
+
+            draft.players.set(player.userId, {
+              ...player,
+              stack: playerStack.updatedStack,
+            })
+
           })
         }))
+        break;
       }
     }
   }
