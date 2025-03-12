@@ -1,6 +1,6 @@
 import 'source-map-support/register';
 import { db } from '@texas-holdem/database-api';
-import { gameManager } from './game';
+import { gameManager } from './core/game';
 import { messageBroker } from './services/message-broker';
 import { socketManager } from './services/socket-manager';
 

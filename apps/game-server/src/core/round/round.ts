@@ -6,7 +6,7 @@ import { BettingRound } from './betting-round';
 import { Card, Deck } from '../../models';
 import { BettingRoundAction } from './betting-round-action';
 import { playerRegistry, socketManager } from '../../services';
-import type { Game } from '../game';
+import type { Game } from '../game/game';
 import { RoundPlayer, BettingRoundPlayer } from '../player';
 
 interface RoundProps {

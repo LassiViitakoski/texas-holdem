@@ -1,3 +1,3 @@
 export * from './game';
 export * from './game-manager';
-export * from './player/player';
+export * from './table-position';

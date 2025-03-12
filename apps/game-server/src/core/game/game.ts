@@ -6,10 +6,10 @@ import type {
 import { Decimal } from 'decimal.js';
 import { db } from '@texas-holdem/database-api';
 import { SimpleIntervalJob, Task } from 'toad-scheduler';
-import { Round } from './round';
-import { Player } from './player';
+import { Round } from '../round';
+import { Player } from '../player';
 import { TablePosition } from './table-position';
-import { playerRegistry, socketManager, scheduler } from '../services';
+import { playerRegistry, socketManager, scheduler } from '../../services';
 
 interface GameConstructorProps {
   id: number;
