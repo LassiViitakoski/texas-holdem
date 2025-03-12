@@ -1,9 +1,9 @@
 import { db } from '@texas-holdem/database-api';
 import { z } from 'zod';
 import { Game } from './game';
-import { Player } from './player';
-import type { EventHandlerMap } from '../types';
-import { socketManager } from '../services';
+import { Player } from '../player';
+import type { EventHandlerMap } from '../../types';
+import { socketManager } from '../../services';
 import { TablePosition } from './table-position';
 
 const schemas = {

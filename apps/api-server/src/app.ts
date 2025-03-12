@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { fastifyAuthPlugin } from '@texas-holdem/auth-service';
 import corsPlugin from './plugins/cors';
 import { gamesRoutes } from './routes/games';
 import { userRoutes } from './routes/users';
@@ -22,6 +23,14 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register plugins
   await app.register(corsPlugin);
+  await app.register(fastifyAuthPlugin, {
+    jwtSecret: 'secret',
+    cookieSecret: 'cookiesecret',
+    userService: {
+      findById: async (id: string) => null,
+      validateCredentials: async (username: string, password: string) => null,
+    },
+  });
 
   // Register routes
   await app.register(gamesRoutes, { prefix: '/games' });

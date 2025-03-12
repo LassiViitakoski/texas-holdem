@@ -16,6 +16,7 @@
     "@fastify/cors": "^10.0.2",
     "@fastify/type-provider-typebox": "^5.1.0",
     "@sinclair/typebox": "^0.34.25",
+    "@texas-holdem/auth-service": "workspace:*",
     "@texas-holdem/database-api": "workspace:*",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",

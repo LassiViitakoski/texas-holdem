@@ -7,7 +7,7 @@ import {
 } from './schema';
 import { withErrorHandler } from '../../errors';
 
-export const getUsers = withErrorHandler<typeof UserResponse[]>()(async (
+export const getUsers = withErrorHandler<{ Reply: typeof UserResponse[] }>()(async (
   _,
   reply,
 ) => {
@@ -15,7 +15,7 @@ export const getUsers = withErrorHandler<typeof UserResponse[]>()(async (
   return reply.code(200).send(users);
 });
 
-export const getUserById = withErrorHandler<typeof UserResponse, unknown, unknown, typeof UserParams>()(async (
+export const getUserById = withErrorHandler<{ Params: typeof UserParams; Reply: typeof UserResponse }>()(async (
   request,
   reply,
 ) => {
@@ -24,7 +24,7 @@ export const getUserById = withErrorHandler<typeof UserResponse, unknown, unknow
   return reply.code(200).send(user);
 });
 
-export const createUser = withErrorHandler<typeof UserResponse, typeof CreateUserReqBody>()(async (
+export const createUser = withErrorHandler<{ Body: typeof CreateUserReqBody; Reply: typeof UserResponse }>()(async (
   request,
   reply,
 ) => {
@@ -39,23 +39,25 @@ export const createUser = withErrorHandler<typeof UserResponse, typeof CreateUse
   return reply.code(201).send(user);
 });
 
-export const updateUser = withErrorHandler<typeof UserResponse, typeof UpdateUserReqBody, unknown, typeof UserParams>()(
-  async (
-    request,
-    reply,
-  ) => {
-    const { id } = request.params;
-    const { username, email, phone } = request.body;
+export const updateUser = withErrorHandler<{
+  Params: typeof UserParams;
+  Body: typeof UpdateUserReqBody;
+  Reply: typeof UserResponse;
+}>()(async (
+  request,
+  reply,
+) => {
+  const { id } = request.params;
+  const { username, email, phone } = request.body;
 
-    const user = await db.user.update(parseInt(id, 10), {
-      username,
-      email,
-      phone,
-    });
+  const user = await db.user.update(parseInt(id, 10), {
+    username,
+    email,
+    phone,
+  });
 
-    return reply.code(200).send(user);
-  },
-);
+  return reply.code(200).send(user);
+});
 
 export const userHandler = {
   create: createUser,
