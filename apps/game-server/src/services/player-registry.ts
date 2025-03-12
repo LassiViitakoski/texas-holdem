@@ -154,11 +154,11 @@ export class PlayerRegistry {
     relationship.forwardMap.delete(id);
   }
 
-  clearBettingRound(bettingRoundPlayerId: number): void {
+  clearBettingRoundPlayer(bettingRoundPlayerId: number): void {
     this.clearRelationship(this.entityRelationships[0], bettingRoundPlayerId);
   }
 
-  clearRound(roundPlayerId: number): void {
+  clearRoundPlayer(roundPlayerId: number): void {
     this.clearRelationship(this.entityRelationships[1], roundPlayerId);
   }
 

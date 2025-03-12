@@ -181,7 +181,9 @@ export class BettingRound {
       (acc, action) => (action.type === 'RAISE' ? acc.plus(action.amount) : acc),
       new Decimal(0),
     );
-    const requiredTotalContribution = totalRaiseAmount.plus(bigBlindAmount);
+    const requiredTotalContribution = this.type === 'PREFLOP'
+      ? totalRaiseAmount.plus(bigBlindAmount)
+      : totalRaiseAmount;
     const playerTotalContribution = this.actions.reduce(
       (acc, action) => (action.bettingRoundPlayerId === bettingRoundPlayerId ? acc.plus(action.amount) : acc),
       new Decimal(0),

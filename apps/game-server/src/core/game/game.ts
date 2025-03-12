@@ -173,6 +173,7 @@ export class Game {
     userId?: number,
     bettingRoundPlayerId?: number,
   ) {
+    this.cancelPlayerActionTimer();
     const { activeRound } = this;
     const activeBettingRound = activeRound?.activeBettingRound;
 
@@ -296,6 +297,7 @@ export class Game {
   }
 
   private handlePlayerActionTimeout(bettingRoundPlayerId: number) {
+    console.log('handlePlayerActionTimeout', bettingRoundPlayerId);
     this.cancelPlayerActionTimer();
     const activeBettingRound = this.activeRound?.activeBettingRound;
 
@@ -307,7 +309,9 @@ export class Game {
       (acc, action) => (action.type === 'RAISE' ? acc.plus(action.amount) : acc),
       new Decimal(0),
     );
-    const requiredTotalContribution = totalRaiseAmount.plus(this.blinds.at(-1)?.amount || new Decimal(0));
+    const requiredTotalContribution = this.activeRound?.activeBettingRound?.type === 'PREFLOP'
+      ? totalRaiseAmount.plus(this.blinds.at(-1)?.amount || new Decimal(0))
+      : totalRaiseAmount;
     const playerTotalContribution = activeBettingRound.actions.reduce(
       (acc, action) => (action.bettingRoundPlayerId === bettingRoundPlayerId ? acc.plus(action.amount) : acc),
       new Decimal(0),

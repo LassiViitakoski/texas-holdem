@@ -56,7 +56,6 @@ export type Round = {
   pot: number
   players: Map<number, RoundPlayer>
   activeBettingRound: BettingRound | null
-  completedBettingRounds: BettingRound[]
 }
 
 export type Blind = {
@@ -194,7 +193,6 @@ export const gameActions: GameActions = {
             pot: round.pot,
             players: new Map(round.players.map((rPlayer: any) => [rPlayer.userId, rPlayer])),
             communityCards: round.communityCards,
-            completedBettingRounds: [],
             activeBettingRound: {
               id: round.activeBettingRound.id,
               type: round.activeBettingRound.type,
@@ -233,7 +231,6 @@ export const gameActions: GameActions = {
           }
 
           activeRound.communityCards = round.communityCards;
-          activeRound.completedBettingRounds = round.completedBettingRounds;
           activeRound.activeBettingRound = {
             id: round.activeBettingRound.id,
             type: round.activeBettingRound.type,

@@ -72,6 +72,8 @@ export const TablePosition = ({ tablePosition }: TablePositionProps) => {
                   <ActionButtons
                     gameId={tablePosition.gameId}
                     userId={user.id}
+                    activeBettingRound={activeBettingRound}
+                    playerStack={player?.stack || 0}
                   />
                 )}
               </div>

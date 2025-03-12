@@ -1,31 +1,27 @@
 import { useGameActions, useGameState } from '@/contexts/GameContext';
 import { useLocalStorageUser } from '@/hooks/useUsers';
+import { BettingRound } from '@/stores/gameStore';
 import { getAmountToCall, getLastRaiseAmount } from '@/utils/gameUtils';
 import { useState } from 'react';
 
 type ActionButtonsProps = {
   gameId: number;
   userId: number;
+  activeBettingRound: BettingRound;
+  playerStack: number;
 }
 
 export const ActionButtons = ({
   gameId,
   userId,
+  activeBettingRound,
+  playerStack,
 }: ActionButtonsProps) => {
-  const user = useLocalStorageUser();
   const actions = useGameActions();
   const game = useGameState((state) => state);
-
-  const { activeBettingRound = null } = game.activeRound || {};
-  const maximumBetAmount = game.players.get(user.id)?.stack || 0;
-
-
-  console.log({ actions: activeBettingRound?.actions });
-
-  const amountToCall = getAmountToCall(userId, activeBettingRound?.actions || []);
+  const amountToCall = getAmountToCall(userId, activeBettingRound?.actions || [], activeBettingRound?.type || 'PREFLOP');
   const lastRaiseAmount = getLastRaiseAmount(activeBettingRound?.actions || []);
   const minimumRaiseAmount = lastRaiseAmount || game.blinds.at(-1)?.amount || 0;
-
   const [betAmount, setBetAmount] = useState(minimumRaiseAmount + amountToCall);
 
   const handleCheck = () => {
@@ -78,13 +74,13 @@ export const ActionButtons = ({
           Fold
         </button>
       </div>
-      {maximumBetAmount > 0 && (
+      {playerStack > 0 && (
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1 w-full">
             <input
               type="range"
               min={minimumRaiseAmount + amountToCall}
-              max={maximumBetAmount}
+              max={playerStack}
               value={betAmount}
               onChange={(e) => setBetAmount(Number(e.target.value))}
               className="w-full flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
