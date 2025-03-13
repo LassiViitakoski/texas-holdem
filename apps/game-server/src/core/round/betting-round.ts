@@ -51,6 +51,10 @@ export class BettingRound {
     };
   }
 
+  public getActivePlayers() {
+    return this.players.filter((player) => !player.hasFolded);
+  }
+
   public async finish() {
     await db.bettingRound.update(this.id, {
       isFinished: true,
@@ -177,13 +181,21 @@ export class BettingRound {
       return;
     }
 
-    const totalRaiseAmount = this.actions.reduce(
-      (acc, action) => (action.type === 'RAISE' ? acc.plus(action.amount) : acc),
-      new Decimal(0),
-    );
-    const requiredTotalContribution = this.type === 'PREFLOP'
-      ? totalRaiseAmount.plus(bigBlindAmount)
-      : totalRaiseAmount;
+    const requiredTotalContribution = this.actions.reduce((acc, action, index) => {
+      if (action.type === 'RAISE') {
+        return acc.plus(action.amount);
+      }
+
+      // If the next action is not a blind, then the blind amount is added to the total contribution amount
+      if (action.type === 'BLIND') {
+        if (this.actions[index + 1]?.type !== 'BLIND') {
+          return acc.plus(action.amount);
+        }
+      }
+
+      return acc;
+    }, new Decimal(0));
+
     const playerTotalContribution = this.actions.reduce(
       (acc, action) => (action.bettingRoundPlayerId === bettingRoundPlayerId ? acc.plus(action.amount) : acc),
       new Decimal(0),

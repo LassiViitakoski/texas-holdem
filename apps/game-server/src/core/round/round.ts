@@ -18,6 +18,7 @@ interface RoundProps {
   activeBettingRound?: BettingRound;
   completedBettingRounds?: BettingRound[];
   communityCards?: Card[];
+  gameId: number;
 }
 
 export class Round {
@@ -37,6 +38,8 @@ export class Round {
 
   public communityCards: Card[];
 
+  private gameId: number;
+
   constructor(params: RoundProps) {
     this.id = params.id;
     this.pot = params.pot;
@@ -46,6 +49,7 @@ export class Round {
     this.activeBettingRound = params.activeBettingRound || null;
     this.completedBettingRounds = params.completedBettingRounds || [];
     this.communityCards = params.communityCards || [];
+    this.gameId = params.gameId;
   }
 
   public toJSON() {
@@ -185,6 +189,68 @@ export class Round {
   public async addToPot(amount: Decimal) {
     this.pot = (await db.round.updatePot(this.id, amount)).pot;
     return this.pot;
+  }
+
+  public async evaluateShowdown(activeRoundPlayers: RoundPlayer[]) {
+    const firstPlayerCards = activeRoundPlayers[0].cards;
+    const { communityCards } = this;
+
+    if (firstPlayerCards.length !== 2 || communityCards.length !== 5) {
+      throw new Error('Invalid number of cards on {Round.evaluateShowdown()}');
+    }
+
+    const playerHands = activeRoundPlayers.map((player) => {
+      const allCards = [...player.cards, ...this.communityCards];
+      // Get all possible 5-card combinations
+      const combinations = this.getCombinations(allCards, 5);
+      // Find the best hand among all combinations
+      return {
+        playerId: player.id,
+        bestHand: combinations.reduce((best, current) => {
+          const currentHandRank = this.evaluateHand(current);
+          return currentHandRank > best.rank ? { cards: current, rank: currentHandRank } : best;
+        }, { cards: combinations[0], rank: 0 }),
+      };
+    });
+
+    /*
+    this.revealPlayerHands();
+    this.evaluateHandRankings();
+    this.determineWinners();  // Can be multiple winners in case of split pot
+    this.distributePot();
+    */
+  }
+
+  private evaluateHand(cards: Card[]): number {
+    // Implement hand evaluation logic here
+    // This is a placeholder implementation
+    return 0;
+  }
+
+  private getCombinations(cards: Card[], r: number): Card[][] {
+    if (r === 0) return [[]];
+    if (cards.length === 0) return [];
+
+    const [first, ...rest] = cards;
+    const combsWithFirst = this.getCombinations(rest, r - 1).map((comb) => [first, ...comb]);
+    const combsWithoutFirst = this.getCombinations(rest, r);
+
+    return [...combsWithFirst, ...combsWithoutFirst];
+  }
+
+  public getActivePlayers(activeBettingRound: BettingRound) {
+    const activeBrPlayers = activeBettingRound.getActivePlayers() || [];
+    const activePlayerIds = new Map<number, boolean>(
+      activeBrPlayers.map((brPlayer) => [
+        playerRegistry.getEntityId({
+          fromId: brPlayer.id,
+          from: 'bettingRoundPlayer',
+          to: 'player',
+        }),
+        true,
+      ]),
+    );
+    return this.players.filter((p) => activePlayerIds.has(p.id));
   }
 
   static async create(game: Game) { // TODO: Refactor to accept parameters instead of whole game instance

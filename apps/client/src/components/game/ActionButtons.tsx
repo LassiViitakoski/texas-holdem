@@ -1,5 +1,4 @@
 import { useGameActions, useGameState } from '@/contexts/GameContext';
-import { useLocalStorageUser } from '@/hooks/useUsers';
 import { BettingRound } from '@/stores/gameStore';
 import { getAmountToCall, getLastRaiseAmount } from '@/utils/gameUtils';
 import { useState } from 'react';
@@ -19,7 +18,7 @@ export const ActionButtons = ({
 }: ActionButtonsProps) => {
   const actions = useGameActions();
   const game = useGameState((state) => state);
-  const amountToCall = getAmountToCall(userId, activeBettingRound?.actions || [], activeBettingRound?.type || 'PREFLOP');
+  const amountToCall = getAmountToCall(userId, activeBettingRound?.actions || []);
   const lastRaiseAmount = getLastRaiseAmount(activeBettingRound?.actions || []);
   const minimumRaiseAmount = lastRaiseAmount || game.blinds.at(-1)?.amount || 0;
   const [betAmount, setBetAmount] = useState(minimumRaiseAmount + amountToCall);

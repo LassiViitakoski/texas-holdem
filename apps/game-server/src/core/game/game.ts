@@ -251,17 +251,19 @@ export class Game {
 
     // Initiate new round
     if (activeBettingRound.isFinished) {
-      if (activeBettingRound.type === 'RIVER') {
-        // COMPLETE ROUND
-        throw new Error('River completion not implemented');
-      }
+      const activeBrPlayers = activeBettingRound.getActivePlayers();
 
-      const activePlayers = activeBettingRound.players.filter((player) => !player.hasFolded);
-
-      if (activePlayers.length === 1) {
+      if (activeBrPlayers.length === 1) {
         // await activeRound.complete();
 
         throw new Error('One player left socket event not yet implemented');
+      }
+
+      if (activeBettingRound.type === 'RIVER') {
+        const activeRoundPlayers = activeRound.getActivePlayers(activeBettingRound);
+        const winners = activeRound.evaluateShowdown(activeRoundPlayers);
+        // COMPLETE ROUND
+        throw new Error('River completion not implemented');
       }
 
       await activeRound.proceedToNextBettingRound(this.id);
@@ -305,13 +307,21 @@ export class Game {
       throw new Error('No active betting round found {Game.handlePlayerActionTimeout()}');
     }
 
-    const totalRaiseAmount = activeBettingRound.actions.reduce(
-      (acc, action) => (action.type === 'RAISE' ? acc.plus(action.amount) : acc),
-      new Decimal(0),
-    );
-    const requiredTotalContribution = this.activeRound?.activeBettingRound?.type === 'PREFLOP'
-      ? totalRaiseAmount.plus(this.blinds.at(-1)?.amount || new Decimal(0))
-      : totalRaiseAmount;
+    const requiredTotalContribution = activeBettingRound.actions.reduce((acc, action, index) => {
+      if (action.type === 'RAISE') {
+        return acc.plus(action.amount);
+      }
+
+      // If the next action is not a blind, then the blind amount is added to the total contribution amount
+      if (action.type === 'BLIND') {
+        if (activeBettingRound.actions[index + 1]?.type !== 'BLIND') {
+          return acc.plus(action.amount);
+        }
+      }
+
+      return acc;
+    }, new Decimal(0));
+
     const playerTotalContribution = activeBettingRound.actions.reduce(
       (acc, action) => (action.bettingRoundPlayerId === bettingRoundPlayerId ? acc.plus(action.amount) : acc),
       new Decimal(0),

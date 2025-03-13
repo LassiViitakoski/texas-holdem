@@ -1,14 +1,21 @@
 import { BettingRoundAction } from "@/stores/gameStore";
-import { RoundPhase } from "@texas-holdem/shared-types";
 
-export const getAmountToCall = (userId: number, actions: BettingRoundAction[], roundPhase: RoundPhase) => {
-  const totalRaiseAmount = actions.reduce(
-    (acc, action) => (action.type === 'RAISE' ? acc + action.amount : acc),
-    0,
-  );
+export const getAmountToCall = (userId: number, actions: BettingRoundAction[]) => {
+  const requiredTotalContribution = actions.reduce((acc, action, index) => {
+    if (action.type === 'RAISE') {
+      return acc + action.amount;
+    }
 
-  const bigBlindAmount = actions.toReversed().find((action) => action.type === 'BLIND')?.amount ?? 0;
-  const requiredTotalContribution = roundPhase === 'PREFLOP' ? totalRaiseAmount + bigBlindAmount : totalRaiseAmount;
+    // If the next action is not a blind, then the blind amount is added to the total contribution amount
+    if (action.type === 'BLIND') {
+      if (actions[index + 1]?.type !== 'BLIND') {
+        return acc + action.amount;
+      }
+    }
+
+    return acc;
+  }, 0);
+
   const playerTotalContribution = actions.reduce(
     (acc, action) => (action.userId === userId ? acc + action.amount : acc),
     0,

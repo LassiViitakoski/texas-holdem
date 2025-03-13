@@ -6,6 +6,8 @@ interface RoundPlayerProps {
   id: number;
   position: number;
   initialStack: Decimal;
+  isWinner: boolean;
+  winnings: Decimal;
   playerId: number;
   cards?: Card[];
 }
@@ -17,12 +19,18 @@ export class RoundPlayer {
 
   public initialStack: Decimal;
 
+  public isWinner: boolean;
+
+  public winnings: Decimal;
+
   public cards: Card[];
 
   constructor(params: RoundPlayerProps) {
     this.id = params.id;
     this.position = params.position;
     this.initialStack = params.initialStack;
+    this.isWinner = params.isWinner;
+    this.winnings = params.winnings;
     this.cards = params.cards || [];
     playerRegistry.registerRoundPlayer(this.id, params.playerId);
   }
