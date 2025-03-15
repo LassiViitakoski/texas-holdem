@@ -10,7 +10,7 @@ export type RoundPhase = 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER';
 
 export type PokerAction = 'BLIND' | 'CALL' | 'CHECK' | 'FOLD' | 'RAISE';
 
-export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
+export type CardRank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
 export type CardSuit = 'Club' | 'Diamond' | 'Heart' | 'Spade';
 
