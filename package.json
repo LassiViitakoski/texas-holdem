@@ -8,7 +8,8 @@
     "dev:all": "pnpm --parallel --filter \"@texas-holdem/api-server\" --filter \"@texas-holdem/client\" --filter \"@texas-holdem/game-server\" dev",
     "dev:api": "pnpm --filter \"@texas-holdem/api-server\" dev",
     "dev:client": "pnpm --filter \"@texas-holdem/client\" dev",
-    "dev:game-server": "pnpm --filter \"@texas-holdem/game-server\" dev"
+    "dev:game-server": "pnpm --filter \"@texas-holdem/game-server\" dev",
+    "test:game-server": "pnpm --filter \"@texas-holdem/game-server\" test"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",
