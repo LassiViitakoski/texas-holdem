@@ -1,5 +1,9 @@
 import type { Decimal } from 'decimal.js';
 
+export type BuildTuple<T, N extends number, R extends T[] = []> = R['length'] extends N
+  ? R
+  : BuildTuple<T, N, [...R, T]>;
+
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type GameStatus = 'WAITING' | 'ROUND_IN_PROGRESS' | 'INACTIVE';
