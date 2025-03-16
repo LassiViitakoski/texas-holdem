@@ -8,6 +8,7 @@ import { BettingRoundAction } from './betting-round-action';
 import { playerRegistry, socketManager } from '../../services';
 import type { Game } from '../game/game';
 import { RoundPlayer, BettingRoundPlayer } from '../player';
+import { findBestHand, CombinedCards } from '../game/showdown/hand-evaluation';
 
 interface RoundProps {
   id: number;
@@ -62,6 +63,19 @@ export class Round {
       completedBettingRounds: this.completedBettingRounds,
       communityCards: this.communityCards,
     };
+  }
+
+  public async complete() {
+    const updatedRound = await db.round.update(this.id, {
+      isFinished: true,
+    });
+
+    this.isFinished = updatedRound.isFinished;
+
+    if (this.activeBettingRound) {
+      this.completedBettingRounds.push(this.activeBettingRound);
+      this.activeBettingRound = null;
+    }
   }
 
   public async proceedToNextBettingRound(gameId: number) {
@@ -192,60 +206,57 @@ export class Round {
   }
 
   public async evaluateShowdown(activeRoundPlayers: RoundPlayer[]) {
-    const firstPlayerCards = activeRoundPlayers[0].cards;
-    const { communityCards } = this;
+    this.revealPlayerHands(activeRoundPlayers);
+    const winners = this.determineWinners(activeRoundPlayers);
+    return winners.map((winner) => ({
+      ...winner,
+      winnings: this.pot.div(winners.length),
+    }));
+  }
 
-    if (firstPlayerCards.length !== 2 || communityCards.length !== 5) {
-      throw new Error('Invalid number of cards on {Round.evaluateShowdown()}');
-    }
-
+  private determineWinners(activeRoundPlayers: RoundPlayer[]) {
     const playerHands = activeRoundPlayers.map((player) => {
-      const allCards = [...player.cards, ...this.communityCards];
-      // Get all possible 5-card combinations
-      const combinations = this.getCombinations(allCards, 5);
-      // Find the best hand among all combinations
+      const combinedCards = [...player.cards, ...this.communityCards];
+
+      if (combinedCards.length !== 7) {
+        throw new Error('Invalid number of cards on {Round.evaluateShowdown()}');
+      }
+
       return {
-        playerId: player.id,
-        bestHand: combinations.reduce((best, current) => {
-          const currentHandRank = this.evaluateHand(current);
-          return currentHandRank > best.rank ? { cards: current, rank: currentHandRank } : best;
-        }, { cards: combinations[0], rank: 0 }),
+        roundPlayer: player,
+        showdownHand: findBestHand(combinedCards as CombinedCards),
       };
     });
 
-    /*
-    this.revealPlayerHands();
-    this.evaluateHandRankings();
-    this.determineWinners();  // Can be multiple winners in case of split pot
-    this.distributePot();
-    */
+    const winnerHandRank = Math.max(...playerHands.map((playerHand) => playerHand.showdownHand.rank));
+    return playerHands.filter((playerHand) => playerHand.showdownHand.rank === winnerHandRank);
   }
 
-  private evaluateHand(cards: Card[]): number {
-    // Implement hand evaluation logic here
-    // This is a placeholder implementation
-    return 0;
-  }
-
-  private getCombinations(cards: Card[], r: number): Card[][] {
-    if (r === 0) return [[]];
-    if (cards.length === 0) return [];
-
-    const [first, ...rest] = cards;
-    const combsWithFirst = this.getCombinations(rest, r - 1).map((comb) => [first, ...comb]);
-    const combsWithoutFirst = this.getCombinations(rest, r);
-
-    return [...combsWithFirst, ...combsWithoutFirst];
+  private revealPlayerHands(activeRoundPlayers: RoundPlayer[]) {
+    socketManager.emitGameEvent(this.gameId, {
+      type: 'REVEAL_PLAYER_HANDS',
+      payload: {
+        playerHands: activeRoundPlayers.map((player) => ({
+          cards: player.cards.map((card) => card.toString()),
+          userId: playerRegistry.getEntityId({
+            fromId: player.id,
+            from: 'roundPlayer',
+            to: 'user',
+          }),
+        })),
+      },
+    });
   }
 
   public getActivePlayers(activeBettingRound: BettingRound) {
     const activeBrPlayers = activeBettingRound.getActivePlayers() || [];
+    console.log('activeBrPlayers', activeBrPlayers);
     const activePlayerIds = new Map<number, boolean>(
       activeBrPlayers.map((brPlayer) => [
         playerRegistry.getEntityId({
           fromId: brPlayer.id,
           from: 'bettingRoundPlayer',
-          to: 'player',
+          to: 'roundPlayer',
         }),
         true,
       ]),

@@ -1,5 +1,5 @@
 import type { CardRank, BuildTuple } from '@texas-holdem/shared-types';
-import { Card } from '../../models';
+import { Card } from '../../../models';
 
 export type ShowdownHand = BuildTuple<Card, 5>;
 export type CombinedCards = BuildTuple<Card, 7>;
@@ -30,7 +30,7 @@ const HIGH_CARD_RANK_MULTIPLIERS = [
   15 * 15 * 15 * 15, // 15^4 = 50625
 ] as const;
 
-enum HandRank {
+export enum HandRank {
   HIGH_CARD = 0,
   ONE_PAIR = 1000000,
   TWO_PAIR = 2000000,
@@ -68,7 +68,7 @@ const getRankCounts = (hand: ShowdownHand): Map<CardRank, number> => hand.reduce
   return counts;
 }, new Map<CardRank, number>());
 
-const createHandCombinations = (cards: CombinedCards): ShowdownHand[] => (
+export const createHandCombinations = (cards: CombinedCards): ShowdownHand[] => (
   COMBINATIONS_7C5.map((indices) => indices.map((i) => cards[i])) as ShowdownHand[]
 );
 
@@ -140,63 +140,97 @@ const getThreeOfAKindValue = (hand: ShowdownHand, rankCounts: Map<CardRank, numb
   return getNumericRank(threeOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[4] + getHighCardValue(hand, rankCounts);
 };
 
-// Core evaluation functions
-export const evaluateHand = (hand: ShowdownHand): number => {
+/**
+ * Evaluates a hand and returns the rank of the hand.
+ * @param hand - The hand to evaluate.
+ * @returns The rank of the hand.
+ */
+export const evaluateHand = (hand: ShowdownHand) => {
   const isFlushHand = isFlush(hand);
   const isStraightHand = isStraight(hand);
   const rankCounts = getRankCounts(hand);
   const counts = Array.from(rankCounts.values());
 
   if (isFlushHand && isStraightHand && hand[4].rank === 'A') {
-    return HandRank.ROYAL_FLUSH;
+    return {
+      rank: HandRank.ROYAL_FLUSH,
+      name: 'Royal Flush',
+    };
   }
 
   if (isFlushHand && isStraightHand) {
-    return HandRank.STRAIGHT_FLUSH + getHighCardValue(hand, rankCounts);
+    return {
+      rank: HandRank.STRAIGHT_FLUSH + getHighCardValue(hand, rankCounts),
+      name: 'Straight Flush',
+    };
   }
 
   if (counts.includes(4)) {
-    return HandRank.FOUR_OF_KIND + getFourOfAKindValue(hand, rankCounts);
+    return {
+      rank: HandRank.FOUR_OF_KIND + getFourOfAKindValue(hand, rankCounts),
+      name: 'Four of a Kind',
+    };
   }
 
   if (counts.includes(3) && counts.includes(2)) {
-    return HandRank.FULL_HOUSE + getFullHouseValue(hand, rankCounts);
+    return {
+      rank: HandRank.FULL_HOUSE + getFullHouseValue(hand, rankCounts),
+      name: 'Full House',
+    };
   }
 
   if (isFlushHand) {
-    return HandRank.FLUSH + getHighCardValue(hand, rankCounts);
+    return {
+      rank: HandRank.FLUSH + getHighCardValue(hand, rankCounts),
+      name: 'Flush',
+    };
   }
 
   if (isStraightHand) {
-    return HandRank.STRAIGHT + getHighCardValue(hand, rankCounts);
+    return {
+      rank: HandRank.STRAIGHT + getHighCardValue(hand, rankCounts),
+      name: 'Straight',
+    };
   }
 
   if (counts.includes(3)) {
-    return HandRank.THREE_OF_KIND + getThreeOfAKindValue(hand, rankCounts);
+    return {
+      rank: HandRank.THREE_OF_KIND + getThreeOfAKindValue(hand, rankCounts),
+      name: 'Three of a Kind',
+    };
   }
 
   if (counts.filter((count) => count === 2).length === 2) {
-    return HandRank.TWO_PAIR + getTwoPairValue(hand, rankCounts);
+    return {
+      rank: HandRank.TWO_PAIR + getTwoPairValue(hand, rankCounts),
+      name: 'Two Pair',
+    };
   }
 
   if (counts.includes(2)) {
-    return HandRank.ONE_PAIR + getOnePairValue(hand, rankCounts);
+    return {
+      rank: HandRank.ONE_PAIR + getOnePairValue(hand, rankCounts),
+      name: 'One Pair',
+    };
   }
 
-  return getHighCardValue(hand, rankCounts);
+  return {
+    rank: getHighCardValue(hand, rankCounts),
+    name: 'High Card',
+  };
 };
 
 export const findBestHand = (cards: CombinedCards) => {
   const sortedCards = [...cards].sort((a, b) => getNumericRank(a) - getNumericRank(b)) as CombinedCards;
   const combinations = createHandCombinations(sortedCards);
 
-  return combinations.reduce<{ cards: ShowdownHand; rank: number }>(
+  return combinations.reduce<{ cards: ShowdownHand; rank: number; name: string }>(
     (best, currentHand) => {
-      const currentRank = evaluateHand(currentHand);
-      return currentRank > best.rank
-        ? { cards: currentHand, rank: currentRank }
+      const hand = evaluateHand(currentHand);
+      return hand.rank > best.rank
+        ? { cards: currentHand, ...hand }
         : best;
     },
-    { cards: combinations[0], rank: -1 },
+    { cards: combinations[0], rank: -1, name: 'High Card' },
   );
 };

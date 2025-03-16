@@ -5,10 +5,25 @@ import { useGameState } from '@/contexts/GameContext';
 
 export const PokerTable = () => {
   const tablePositions = useGameState(state => state.tablePositions);
+  const game = useGameState(state => state);
   const activeRound = useGameState(state => state.activeRound);
+  const winners = Array.from(activeRound?.players?.values() || [])
+    .filter(p => p.isWinner)
+    .map(player => ({
+      ...player,
+      username: game.players.get(player.userId)?.username || '',
+    }));
+
 
   return (
-    <div className="flex items-center justify-center min-h-[600px] p-4">
+    <div className="flex relative items-center justify-center min-h-[600px] p-4">
+      {winners.length > 0 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2">
+          <div className="text-black text-2xl font-bold">
+            Winners: {winners.map(w => `${w.username} ($${w.winnings})`).join(',')}
+          </div>
+        </div>
+      )}
       <div className="relative w-full max-w-4xl aspect-[16/9]">
         <div className="absolute inset-0 bg-emerald-800 rounded-[35%] shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-[url('/felt-texture.png')] opacity-20 mix-blend-multiply" />

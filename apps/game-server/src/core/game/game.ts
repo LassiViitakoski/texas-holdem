@@ -259,14 +259,56 @@ export class Game {
         throw new Error('One player left socket event not yet implemented');
       }
 
-      if (activeBettingRound.type === 'RIVER') {
-        const activeRoundPlayers = activeRound.getActivePlayers(activeBettingRound);
-        const winners = activeRound.evaluateShowdown(activeRoundPlayers);
-        // COMPLETE ROUND
-        throw new Error('River completion not implemented');
+      if (activeBettingRound.type !== 'RIVER') {
+        await activeRound.proceedToNextBettingRound(this.id);
+        return;
       }
 
-      await activeRound.proceedToNextBettingRound(this.id);
+      if (activeBettingRound.type === 'RIVER') {
+        const winners = await db.service.executeTransaction(async () => {
+          const activeRoundPlayers = activeRound.getActivePlayers(activeBettingRound);
+          const showdownWinners = (await activeRound.evaluateShowdown(activeRoundPlayers))
+            .map((winner) => {
+              const playerId = playerRegistry.getEntityId({
+                fromId: winner.roundPlayer.id,
+                from: 'roundPlayer',
+                to: 'player',
+              });
+              return { ...winner, player: this.players.find((p) => p.id === playerId) };
+            });
+
+          await Promise.all([
+            activeRound.complete(),
+            ...showdownWinners.map((winner) => (
+              winner.player
+                ? winner.player.addToStack(winner.winnings)
+                : Promise.resolve()
+            )),
+            ...showdownWinners.map((winner) => winner.roundPlayer.markAsWinner(winner.winnings)),
+          ]);
+
+          return showdownWinners;
+        });
+
+        socketManager.emitGameEvent(this.id, {
+          type: 'ROUND_FINISHED',
+          payload: {
+            winners: winners.map((winner) => ({
+              userId: playerRegistry.getEntityId({
+                fromId: winner.roundPlayer.id,
+                from: 'roundPlayer',
+                to: 'user',
+              }),
+              showdownHand: {
+                cards: winner.showdownHand.cards,
+                name: winner.showdownHand.name,
+              },
+              winnings: winner.winnings.toNumber(),
+              playerStack: winner.player?.stack.toNumber(),
+            })),
+          },
+        });
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { BettingRoundAction, RoundPlayer } from '@prisma/client';
+import type { BettingRoundAction, Round, RoundPlayer } from '@prisma/client';
 
 type CreateRoundData = {
   pot: Decimal;
@@ -11,6 +11,13 @@ type CreateRoundData = {
 
 export class RoundRepository {
   constructor(private client: PrismaClient) {}
+
+  update(id: number, data: Partial<Round>) {
+    return this.client.round.update({
+      where: { id },
+      data,
+    });
+  }
 
   public async initiate(data: CreateRoundData) {
     return this.client.$transaction(async (tx) => {

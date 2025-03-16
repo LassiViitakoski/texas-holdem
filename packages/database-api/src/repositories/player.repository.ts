@@ -58,6 +58,17 @@ export class PlayerRepository {
     });
   }
 
+  async updateStack(id: number, incrementAmount: Decimal) {
+    return this.client.player.update({
+      where: { id },
+      data: {
+        stack: {
+          increment: incrementAmount,
+        },
+      },
+    });
+  }
+
   async findByGame(gameId: number) {
     return this.client.player.findMany({
       where: {

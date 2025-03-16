@@ -19,7 +19,13 @@ export type RoundPlayer = {
   id: number
   userId: number
   initialStack: number
+  isWinner: boolean
+  winnings: number
   cards: CardNotation[]
+  showdownHand?: {
+    cards: CardNotation[]
+    name: string
+  }
 }
 
 export type BettingRoundPlayer = {
@@ -150,12 +156,6 @@ export const gameActions: GameActions = {
         }))
         break;
 
-      case 'COMMUNITY_CARDS_UPDATED':
-        store.setState(produce(draft => {
-          draft.communityCards = event.payload.cards
-          draft.phase = event.payload.phase
-        }))
-        break
 
       case 'GAME_ROOM_JOIN_SUCCESS': {
         const { game } = event.payload;
@@ -279,6 +279,64 @@ export const gameActions: GameActions = {
           if ('isBettingRoundFinished' in update) {
             activeBettingRound.isFinished = update.isBettingRoundFinished;
           }
+        }))
+        break;
+      }
+
+      case 'REVEAL_PLAYER_HANDS': {
+        const { playerHands } = event.payload;
+
+        store.setState(produce(draft => {
+          const { activeRound } = draft;
+
+          if (!activeRound) {
+            throw new Error('No active round found in {handleSocketEvent}');
+          }
+
+          playerHands.forEach((pHand: any) => {
+            const roundPlayer = activeRound.players.get(pHand.userId);
+
+            if (roundPlayer) {
+              activeRound.players.set(roundPlayer.userId, {
+                ...roundPlayer,
+                cards: pHand.cards,
+              });
+            }
+          })
+        }))
+        break;
+      }
+
+      case 'ROUND_FINISHED': {
+        const { winners } = event.payload;
+
+        store.setState(produce(draft => {
+          const { activeRound } = draft;
+
+          if (!activeRound) {
+            throw new Error('No active round found in {handleSocketEvent}');
+          }
+
+          winners.forEach((winner: any) => {
+            const player = draft.players.get(winner.userId);
+            const roundPlayer = activeRound.players.get(winner.userId);
+
+            if (roundPlayer) {
+              activeRound.players.set(roundPlayer.userId, {
+                ...roundPlayer,
+                isWinner: true,
+                winnings: winner.winnings,
+                showdownHand: winner.showdownHand,
+              });
+            }
+
+            if (player) {
+              draft.players.set(player.userId, {
+                ...player,
+                stack: winner.playerStack,
+              });
+            }
+          })
         }))
         break;
       }

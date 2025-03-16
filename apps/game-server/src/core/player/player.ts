@@ -37,9 +37,14 @@ export class Player {
   }
 
   async deductFromStack(amount: Decimal) {
-    this.stack = (await db.player.update(this.id, {
-      stack: this.stack.minus(amount),
-    })).stack;
+    const updatedPlayer = await db.player.updateStack(this.id, amount.times(-1));
+    this.stack = updatedPlayer.stack;
+    return this.stack;
+  }
+
+  async addToStack(amount: Decimal) {
+    const updatedPlayer = await db.player.updateStack(this.id, amount);
+    this.stack = updatedPlayer.stack;
     return this.stack;
   }
 }

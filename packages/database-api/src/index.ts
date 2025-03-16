@@ -8,6 +8,7 @@ import {
   BettingRoundRepository,
   BettingRoundActionRepository,
   BettingRoundPlayerRepository,
+  RoundPlayerRepository,
 } from './repositories';
 import { DatabaseService } from './core/database.service';
 
@@ -24,13 +25,15 @@ export class DatabaseApi {
 
   public readonly round: RoundRepository;
 
-  public readonly player: PlayerRepository;
-
   public readonly tablePosition: TablePositionRepository;
 
   public readonly bettingRound: BettingRoundRepository;
 
   public readonly bettingRoundAction: BettingRoundActionRepository;
+
+  public readonly player: PlayerRepository;
+
+  public readonly roundPlayer: RoundPlayerRepository;
 
   public readonly bettingRoundPlayer: BettingRoundPlayerRepository;
 
@@ -40,10 +43,11 @@ export class DatabaseApi {
     this.user = new UserRepository(this.client);
     this.game = new GameRepository(this.client);
     this.round = new RoundRepository(this.client);
-    this.player = new PlayerRepository(this.client);
     this.tablePosition = new TablePositionRepository(this.client);
     this.bettingRound = new BettingRoundRepository(this.client);
     this.bettingRoundAction = new BettingRoundActionRepository(this.client);
+    this.player = new PlayerRepository(this.client);
+    this.roundPlayer = new RoundPlayerRepository(this.client);
     this.bettingRoundPlayer = new BettingRoundPlayerRepository(this.client);
   }
 

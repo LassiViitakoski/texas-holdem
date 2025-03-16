@@ -1,4 +1,5 @@
 import { Decimal } from 'decimal.js';
+import { db } from '@texas-holdem/database-api';
 import { Card } from '../../models';
 import { playerRegistry } from '../../services';
 
@@ -47,5 +48,14 @@ export class RoundPlayer {
         to: 'user',
       }),
     };
+  }
+
+  public async markAsWinner(winnings: Decimal) {
+    const updatedPlayer = await db.roundPlayer.update(this.id, {
+      winnings,
+      isWinner: true,
+    });
+    this.isWinner = updatedPlayer.isWinner;
+    this.winnings = updatedPlayer.winnings;
   }
 }
