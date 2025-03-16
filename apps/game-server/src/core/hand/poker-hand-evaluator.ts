@@ -2,10 +2,34 @@ import type { CardRank, BuildTuple } from '@texas-holdem/shared-types';
 import { Card } from '../../models';
 
 export type ShowdownHand = BuildTuple<Card, 5>;
-
 export type CombinedCards = BuildTuple<Card, 7>;
 
-// Define clear types
+// Constants
+const COMBINATIONS_7C5 = [
+  [0, 1, 2, 3, 4], [0, 1, 2, 3, 5], [0, 1, 2, 3, 6],
+  [0, 1, 2, 4, 5], [0, 1, 2, 4, 6], [0, 1, 2, 5, 6],
+  [0, 1, 3, 4, 5], [0, 1, 3, 4, 6], [0, 1, 3, 5, 6],
+  [0, 1, 4, 5, 6], [0, 2, 3, 4, 5], [0, 2, 3, 4, 6],
+  [0, 2, 3, 5, 6], [0, 2, 4, 5, 6], [0, 3, 4, 5, 6],
+  [1, 2, 3, 4, 5], [1, 2, 3, 4, 6], [1, 2, 3, 5, 6],
+  [1, 2, 4, 5, 6], [1, 3, 4, 5, 6], [2, 3, 4, 5, 6],
+] as const;
+
+const ALPHABETICAL_CARD_RANKS = new Map<CardRank, string>([
+  ['J', '11'],
+  ['Q', '12'],
+  ['K', '13'],
+  ['A', '14'],
+]);
+
+const HIGH_CARD_RANK_MULTIPLIERS = [
+  1, // 15^0 = 1
+  15, // 15^1 = 15
+  15 * 15, // 15^2 = 225
+  15 * 15 * 15, // 15^3 = 3375
+  15 * 15 * 15 * 15, // 15^4 = 50625
+] as const;
+
 enum HandRank {
   HIGH_CARD = 0,
   ONE_PAIR = 1000000,
@@ -19,245 +43,160 @@ enum HandRank {
   ROYAL_FLUSH = 9000000,
 }
 
-export class PokerHandEvaluator {
-  private combinations: ShowdownHand[] = [];
+// Helper functions
+const getNumericRank = (card: Card): number => +(ALPHABETICAL_CARD_RANKS.get(card.rank) || card.rank);
 
-  // Pre-computed indices for all possible 5-card combinations from 7 cards
-  private static readonly COMBINATIONS_7C5 = [
-    [0, 1, 2, 3, 4], [0, 1, 2, 3, 5], [0, 1, 2, 3, 6],
-    [0, 1, 2, 4, 5], [0, 1, 2, 4, 6], [0, 1, 2, 5, 6],
-    [0, 1, 3, 4, 5], [0, 1, 3, 4, 6], [0, 1, 3, 5, 6],
-    [0, 1, 4, 5, 6], [0, 2, 3, 4, 5], [0, 2, 3, 4, 6],
-    [0, 2, 3, 5, 6], [0, 2, 4, 5, 6], [0, 3, 4, 5, 6],
-    [1, 2, 3, 4, 5], [1, 2, 3, 4, 6], [1, 2, 3, 5, 6],
-    [1, 2, 4, 5, 6], [1, 3, 4, 5, 6], [2, 3, 4, 5, 6],
-  ] as const;
+const isFlush = (hand: ShowdownHand): boolean => {
+  const { suit } = hand[0];
+  return hand.every((card) => card.suit === suit);
+};
 
-  private static readonly ALPHABETICAL_CARD_RANKS = new Map<CardRank, string>([
-    ['J', '11'],
-    ['Q', '12'],
-    ['K', '13'],
-    ['A', '14'],
-  ]);
+const isStraight = (hand: ShowdownHand): boolean => {
+  const numericRanks = hand.map((card) => getNumericRank(card));
 
-  // Pre-calculate powers of 15 for 5-card hand
-  private static readonly HIGH_CARD_RANK_MULTIPLIERS = [
-    1, // 15^0 = 1
-    15, // 15^1 = 15
-    15 * 15, // 15^2 = 225
-    15 * 15 * 15, // 15^3 = 3375
-    15 * 15 * 15 * 15, // 15^4 = 50625
-  ] as const;
-
-  public initializeCombinations(cards: CombinedCards) {
-    this.combinations = PokerHandEvaluator.createHandCombinations(cards);
-    return this;
+  // Check for Ace-low straight (A,2,3,4,5)
+  if (numericRanks[0] === 2 && numericRanks[4] === 14) {
+    return numericRanks.slice(0, 4).every((rank, index) => rank === index + 2);
   }
 
-  public findBestHand() {
-    let bestHand = { cards: [] as unknown as ShowdownHand, rank: -1 };
+  // Check for regular straight
+  return numericRanks.every((rank, index) => index === 0 || rank === numericRanks[index - 1] + 1);
+};
 
-    for (let i = 0; i < this.combinations.length; i += 1) {
-      const currentHand = this.combinations[i];
-      const currentRank = PokerHandEvaluator.evaluateHand(currentHand);
+const getRankCounts = (hand: ShowdownHand): Map<CardRank, number> => hand.reduce((counts, card) => {
+  counts.set(card.rank, (counts.get(card.rank) || 0) + 1);
+  return counts;
+}, new Map<CardRank, number>());
 
-      if (currentRank > bestHand.rank) {
-        bestHand = { cards: currentHand, rank: currentRank };
-      }
+const createHandCombinations = (cards: CombinedCards): ShowdownHand[] => (
+  COMBINATIONS_7C5.map((indices) => indices.map((i) => cards[i])) as ShowdownHand[]
+);
+
+const getHighCardValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>) => hand
+  .reduce((acc, card, index) => {
+    if (rankCounts.get(card.rank) === 1) {
+      acc.total += HIGH_CARD_RANK_MULTIPLIERS[index - acc.skippedHands] * getNumericRank(card);
+    } else {
+      acc.skippedHands += 1;
     }
 
-    return bestHand;
+    return acc;
+  }, { total: 0, skippedHands: 0 })
+  .total;
+
+const getOnePairValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>): number => {
+  const oneOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 2);
+  if (!oneOfAKindCard) return 0;
+
+  return getNumericRank(oneOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[4]
+    + getHighCardValue(hand, rankCounts);
+};
+
+const getTwoPairValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>): number => {
+  const pairs = Array.from(rankCounts.entries())
+    .filter(([, count]) => count === 2)
+    .map(([rank]) => hand.find((card) => card.rank === rank)!)
+    .sort((a, b) => getNumericRank(b) - getNumericRank(a));
+
+  if (pairs.length !== 2) {
+    throw new Error('Two pair requires two pairs');
   }
 
-  public static evaluateHand(hand: ShowdownHand): number {
-    // Sort the hand by rank for easier evaluation
+  const [highPair, lowPair] = pairs;
+  return getNumericRank(highPair) * HIGH_CARD_RANK_MULTIPLIERS[4]
+    + getNumericRank(lowPair) * HIGH_CARD_RANK_MULTIPLIERS[3]
+    + getHighCardValue(hand, rankCounts);
+};
 
-    // Check for flush (all same suit)
-    const isFlush = PokerHandEvaluator.isFlush(hand);
+const getFourOfAKindValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>): number => {
+  const fourOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 4);
 
-    // Check for straight (sequential ranks)
-    const isStraight = PokerHandEvaluator.isStraight(hand);
-
-    // Get rank counts for pairs, three of a kind, etc.
-    const rankCounts = PokerHandEvaluator.getRankCounts(hand);
-    const counts = Array.from(rankCounts.values());
-
-    // Hand rankings (multiply by 1000000 to ensure proper ordering)
-    if (isFlush && isStraight && hand[4].rank === 'A') {
-      return HandRank.ROYAL_FLUSH; // Royal Flush
-    }
-    if (isFlush && isStraight) {
-      return HandRank.STRAIGHT_FLUSH + PokerHandEvaluator.getHighCardValue(hand, rankCounts); // Straight Flush
-    }
-    if (counts.includes(4)) {
-      return HandRank.FOUR_OF_KIND + PokerHandEvaluator.getFourOfAKindValue(hand, rankCounts); // Four of a Kind
-    }
-    if (counts.includes(3) && counts.includes(2)) {
-      return HandRank.FULL_HOUSE + PokerHandEvaluator.getFullHouseValue(hand, rankCounts); // Full House
-    }
-    if (isFlush) {
-      return HandRank.FLUSH + PokerHandEvaluator.getHighCardValue(hand, rankCounts); // Flush
-    }
-    if (isStraight) {
-      return HandRank.STRAIGHT + PokerHandEvaluator.getHighCardValue(hand, rankCounts); // Straight
-    }
-    if (counts.includes(3)) {
-      return HandRank.THREE_OF_KIND + PokerHandEvaluator.getThreeOfAKindValue(hand, rankCounts); // Three of a Kind
-    }
-    if (counts.filter((count) => count === 2).length === 2) {
-      return HandRank.TWO_PAIR + PokerHandEvaluator.getTwoPairValue(hand, rankCounts); // Two Pair
-    }
-    if (counts.includes(2)) {
-      return HandRank.ONE_PAIR + PokerHandEvaluator.getOnePairValue(hand, rankCounts); // One Pair
-    }
-
-    return PokerHandEvaluator.getHighCardValue(hand, rankCounts); // High Card
+  if (!fourOfAKindCard) {
+    throw new Error('Four of a kind requires four of a kind');
   }
 
-  // Helper methods to implement:
-  private static isFlush(hand: ShowdownHand): boolean {
-    const { suit } = hand[0];
+  return getNumericRank(fourOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[4];
+};
 
-    for (let i = 1; i < hand.length; i += 1) {
-      if (hand[i].suit !== suit) {
-        return false;
-      }
-    }
+const getFullHouseValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>): number => {
+  const threeOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 3);
+  const twoOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 2);
 
-    return true;
+  if (!threeOfAKindCard || !twoOfAKindCard) {
+    throw new Error('Full house requires three of a kind and two of a kind');
   }
 
-  private static getNumericRank(card: Card) {
-    return +(PokerHandEvaluator.ALPHABETICAL_CARD_RANKS.get(card.rank) || card.rank);
+  return getNumericRank(threeOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[1]
+    + getNumericRank(twoOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[0];
+};
+
+const getThreeOfAKindValue = (hand: ShowdownHand, rankCounts: Map<CardRank, number>): number => {
+  const threeOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 3);
+
+  if (!threeOfAKindCard) {
+    throw new Error('Three of a kind requires three of a kind');
   }
 
-  private static isStraight(hand: ShowdownHand) {
-    // Check for Ace-low straight (A,2,3,4,5)
-    if (hand[0].rank === '2' && hand[4].rank === 'A') {
-      return hand.slice(0, 4).every((card, index) => PokerHandEvaluator.getNumericRank(card) === index + 2);
-    }
+  return getNumericRank(threeOfAKindCard) * HIGH_CARD_RANK_MULTIPLIERS[4] + getHighCardValue(hand, rankCounts);
+};
 
-    return hand.every((rank, index) => index === 0
-      || PokerHandEvaluator.getNumericRank(rank) === PokerHandEvaluator.getNumericRank(hand[index - 1]) + 1);
+// Core evaluation functions
+export const evaluateHand = (hand: ShowdownHand): number => {
+  const isFlushHand = isFlush(hand);
+  const isStraightHand = isStraight(hand);
+  const rankCounts = getRankCounts(hand);
+  const counts = Array.from(rankCounts.values());
+
+  if (isFlushHand && isStraightHand && hand[4].rank === 'A') {
+    return HandRank.ROYAL_FLUSH;
   }
 
-  private static getRankCounts(hand: ShowdownHand) {
-    const map = new Map<CardRank, number>();
-
-    for (let i = 0; i < hand.length; i += 1) {
-      const card = hand[i];
-      const count = map.get(card.rank) || 0;
-      map.set(card.rank, count + 1);
-    }
-
-    return map;
+  if (isFlushHand && isStraightHand) {
+    return HandRank.STRAIGHT_FLUSH + getHighCardValue(hand, rankCounts);
   }
 
-  private static createHandCombinations(cards: BuildTuple<Card, 7>) {
-    return PokerHandEvaluator.COMBINATIONS_7C5
-      .map((indices) => indices.map((i) => cards[i])) as ShowdownHand[];
+  if (counts.includes(4)) {
+    return HandRank.FOUR_OF_KIND + getFourOfAKindValue(hand, rankCounts);
   }
 
-  private static compareCardRanks = (a: Card, b: Card) => {
-    const rankA = PokerHandEvaluator.getNumericRank(a);
-    const rankB = PokerHandEvaluator.getNumericRank(b);
-    return rankA - rankB;
-  };
-
-  private static getHighCardValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const skippedHandsCount = 0;
-
-    return hand
-      .reduce((acc, card, index) => {
-        if (rankCounts.get(card.rank) === 1) {
-          acc.total += (
-            PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[index - skippedHandsCount]
-          * PokerHandEvaluator.getNumericRank(card)
-          );
-        } else {
-          acc.skippedHands += 1;
-        }
-
-        return acc;
-      }, { total: 0, skippedHands: 0 })
-      .total;
+  if (counts.includes(3) && counts.includes(2)) {
+    return HandRank.FULL_HOUSE + getFullHouseValue(hand, rankCounts);
   }
 
-  private static getOnePairValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const oneOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 2);
-
-    if (!oneOfAKindCard) {
-      return 0;
-    }
-
-    const numericRank = PokerHandEvaluator.getNumericRank(oneOfAKindCard);
-    return numericRank * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[4]
-      + PokerHandEvaluator.getHighCardValue(hand, rankCounts);
+  if (isFlushHand) {
+    return HandRank.FLUSH + getHighCardValue(hand, rankCounts);
   }
 
-  private static getTwoPairValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const twoOfAKindRanks = Array.from(rankCounts.entries())
-      .filter(([, count]) => count === 2)
-      .map(([rank]) => rank);
-
-    if (twoOfAKindRanks.length !== 2) {
-      return 0;
-    }
-
-    const twoOfAKindCards = twoOfAKindRanks.map((rank) => hand.find((card) => card.rank === rank)!);
-
-    const numericTwoOfAKindRanks = twoOfAKindCards.map((card) => PokerHandEvaluator.getNumericRank(card));
-
-    // Make sure the higher pair is first
-    if (numericTwoOfAKindRanks[0] < numericTwoOfAKindRanks[1]) {
-      [numericTwoOfAKindRanks[0], numericTwoOfAKindRanks[1]] = [numericTwoOfAKindRanks[1], numericTwoOfAKindRanks[0]];
-    }
-
-    return numericTwoOfAKindRanks[0] * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[4]
-      + numericTwoOfAKindRanks[1] * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[3]
-      + PokerHandEvaluator.getHighCardValue(hand, rankCounts);
+  if (isStraightHand) {
+    return HandRank.STRAIGHT + getHighCardValue(hand, rankCounts);
   }
 
-  private static getFourOfAKindValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const fourOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 4);
-
-    if (!fourOfAKindCard) {
-      return 0;
-    }
-
-    const numericRank = PokerHandEvaluator.getNumericRank(fourOfAKindCard);
-    return numericRank * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[4];
+  if (counts.includes(3)) {
+    return HandRank.THREE_OF_KIND + getThreeOfAKindValue(hand, rankCounts);
   }
 
-  private static getFullHouseValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const threeOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 3);
-
-    if (!threeOfAKindCard) {
-      return 0;
-    }
-
-    const twoOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 2);
-
-    if (!twoOfAKindCard) {
-      return 0;
-    }
-
-    const numericThreeOfAKindRank = PokerHandEvaluator.getNumericRank(threeOfAKindCard);
-    const numericTwoOfAKindRank = PokerHandEvaluator.getNumericRank(twoOfAKindCard);
-
-    return numericThreeOfAKindRank * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[1]
-      + numericTwoOfAKindRank * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[0];
+  if (counts.filter((count) => count === 2).length === 2) {
+    return HandRank.TWO_PAIR + getTwoPairValue(hand, rankCounts);
   }
 
-  private static getThreeOfAKindValue(hand: ShowdownHand, rankCounts: Map<CardRank, number>): number {
-    const threeOfAKindCard = hand.find((card) => rankCounts.get(card.rank) === 3);
-
-    if (!threeOfAKindCard) {
-      return 0;
-    }
-
-    const numericRank = PokerHandEvaluator.getNumericRank(threeOfAKindCard);
-    return numericRank * PokerHandEvaluator.HIGH_CARD_RANK_MULTIPLIERS[4]
-      + PokerHandEvaluator.getHighCardValue(hand, rankCounts);
+  if (counts.includes(2)) {
+    return HandRank.ONE_PAIR + getOnePairValue(hand, rankCounts);
   }
-}
+
+  return getHighCardValue(hand, rankCounts);
+};
+
+export const findBestHand = (cards: CombinedCards) => {
+  const sortedCards = [...cards].sort((a, b) => getNumericRank(a) - getNumericRank(b)) as CombinedCards;
+  const combinations = createHandCombinations(sortedCards);
+
+  return combinations.reduce<{ cards: ShowdownHand; rank: number }>(
+    (best, currentHand) => {
+      const currentRank = evaluateHand(currentHand);
+      return currentRank > best.rank
+        ? { cards: currentHand, rank: currentRank }
+        : best;
+    },
+    { cards: combinations[0], rank: -1 },
+  );
+};
