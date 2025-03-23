@@ -4,6 +4,7 @@ export const CreateUserReqBody = Type.Object({
   username: Type.String({ minLength: 3, maxLength: 50 }),
   email: Type.String({ format: 'email' }),
   phone: Type.Optional(Type.String()),
+  password: Type.String({ minLength: 5 }),
 });
 
 export const UpdateUserReqBody = Type.Partial(CreateUserReqBody);

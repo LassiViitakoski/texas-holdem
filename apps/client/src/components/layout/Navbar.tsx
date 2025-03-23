@@ -18,6 +18,12 @@ export const Navbar = () => (
           <Link to="/profile" className="text-gray-300 hover:text-white transition-colors">
             Profile
           </Link>
+          <Link to="/login" className="text-gray-300 hover:text-white transition-colors">
+            Login
+          </Link>
+          <Link to="/register" className="text-gray-300 hover:text-white transition-colors">
+            Register
+          </Link>
           <Chip amount={5000} className="ml-4" />
         </nav>
       </div>
