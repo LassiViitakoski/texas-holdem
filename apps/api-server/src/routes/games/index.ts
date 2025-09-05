@@ -4,7 +4,7 @@ import { gamesHandler } from './handler';
 import { CreateGameReqBody, GameParams, GameResponse } from './schema';
 
 export const gamesRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get<{ Reply: typeof GameResponse[] }>('/', {
+  fastify.get('/', {
     schema: {
       response: {
         200: Type.Array(GameResponse),
@@ -13,8 +13,8 @@ export const gamesRoutes: FastifyPluginAsync = async (fastify) => {
   }, gamesHandler.getAll);
 
   fastify.post<{
-    Body: typeof CreateGameReqBody;
-    Reply: typeof GameResponse;
+    Body: typeof CreateGameReqBody.static;
+    Reply: typeof GameResponse.static;
   }>('/', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -25,7 +25,7 @@ export const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     },
   }, gamesHandler.create);
 
-  fastify.get<{ Params: typeof GameParams; Reply: typeof GameResponse }>('/:id', {
+  fastify.get('/:id', {
     schema: {
       params: GameParams,
       response: {

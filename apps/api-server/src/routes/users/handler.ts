@@ -7,7 +7,7 @@ import {
 } from './schema';
 import { withErrorHandler } from '../../errors';
 
-export const getUsers = withErrorHandler<{ Reply: typeof UserResponse[] }>()(async (
+export const getUsers = withErrorHandler<{ Reply: typeof UserResponse.static[] }>()(async (
   _,
   reply,
 ) => {
@@ -15,7 +15,10 @@ export const getUsers = withErrorHandler<{ Reply: typeof UserResponse[] }>()(asy
   return reply.code(200).send(users);
 });
 
-export const getUserById = withErrorHandler<{ Params: typeof UserParams; Reply: typeof UserResponse }>()(async (
+export const getUserById = withErrorHandler<{
+  Params: typeof UserParams.static;
+  Reply: typeof UserResponse.static;
+}>()(async (
   request,
   reply,
 ) => {
@@ -24,7 +27,10 @@ export const getUserById = withErrorHandler<{ Params: typeof UserParams; Reply: 
   return reply.code(200).send(user);
 });
 
-export const createUser = withErrorHandler<{ Body: typeof CreateUserReqBody; Reply: typeof UserResponse }>()(async (
+export const createUser = withErrorHandler<{
+  Body: typeof CreateUserReqBody.static;
+  Reply: typeof UserResponse.static;
+}>()(async (
   request,
   reply,
 ) => {
@@ -40,16 +46,15 @@ export const createUser = withErrorHandler<{ Body: typeof CreateUserReqBody; Rep
 });
 
 export const updateUser = withErrorHandler<{
-  Params: typeof UserParams;
-  Body: typeof UpdateUserReqBody;
-  Reply: typeof UserResponse;
+  Params: typeof UserParams.static;
+  Body: typeof UpdateUserReqBody.static;
+  Reply: typeof UserResponse.static;
 }>()(async (
   request,
   reply,
 ) => {
   const { id } = request.params;
   const { username, email, phone } = request.body;
-
   const user = await db.user.update(parseInt(id, 10), {
     username,
     email,

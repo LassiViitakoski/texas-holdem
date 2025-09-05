@@ -19,8 +19,8 @@ import { withErrorHandler } from '../../errors';
 const db = DatabaseApi.getInstance();
 
 export const createGameHandler = withErrorHandler<{
-  Body: typeof CreateGameReqBody;
-  Reply: typeof GameResponse;
+  Body: typeof CreateGameReqBody.static;
+  Reply: typeof GameResponse.static;
 }>()(async (
   request,
   reply,
@@ -34,7 +34,10 @@ export const createGameHandler = withErrorHandler<{
   return reply.code(201).send(createdGame);
 });
 
-export const getGameHandler = withErrorHandler<{ Params: typeof GameParams; Reply: typeof GameResponse; }>()(async (
+export const getGameHandler = withErrorHandler<{
+  Params: typeof GameParams.static;
+  Reply: typeof GameResponse.static;
+}>()(async (
   request,
   reply,
 ) => {
@@ -48,7 +51,7 @@ export const getGameHandler = withErrorHandler<{ Params: typeof GameParams; Repl
   return reply.send(game);
 });
 
-export const getAllGamesHandler = withErrorHandler<{ Reply: typeof GameResponse[] }>()(async (
+export const getAllGamesHandler = withErrorHandler<{ Reply: typeof GameResponse.static[] }>()(async (
   request,
   reply,
 ) => {
